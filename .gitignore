@@ -1,0 +1,27 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Provider binary
+terraform-provider-registry
+terraform-provider-registry_*
+
+# Go
+*.exe
+*.test
+*.out
+dist/
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

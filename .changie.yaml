@@ -1,0 +1,14 @@
+changesDir: .changes
+unreleasedDir: unreleased
+headerPath: header.tpl.md
+changelogPath: CHANGELOG.md
+versionExt: md
+versionFormat: "## {{ .Version }} ({{ .Time.Format \"January 02, 2006\" }})"
+kindFormat: "### {{ .Kind }}"
+changeFormat: "* {{ .Body }}"
+kinds:
+  - label: Breaking Changes
+  - label: Features
+  - label: Bug Fixes
+  - label: Documentation
+  - label: Dependencies

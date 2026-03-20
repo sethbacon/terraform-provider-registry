@@ -1,0 +1,32 @@
+---
+page_title: "Provider: Terraform Registry"
+description: |-
+  The Terraform Registry provider enables management of a self-hosted Terraform Registry backend instance — including users, organizations, modules, providers, mirrors, SCM integrations, and more.
+---
+
+# Terraform Registry Provider
+
+The **registry** provider manages resources within a self-hosted [Terraform Registry Backend](https://github.com/terraform-registry/terraform-registry-backend) instance. It allows you to declaratively manage all registry resources via Terraform.
+
+## Features
+
+- **Identity & Access**: Users, organizations, organization members, API keys, role templates
+- **Registry Content**: Module records, provider records, SCM integrations, module-SCM links
+- **Infrastructure**: Provider mirrors, Terraform binary mirrors, storage configurations
+- **Governance**: Policies, approval requests
+- **Data Sources**: Read and list any of the above resources, plus audit logs and statistics
+
+## Example Usage
+
+{{ tffile "examples/provider/main.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
+
+## Authentication
+
+The provider supports two authentication methods, both passed as a Bearer token:
+
+1. **API Key** — Created via the registry admin UI or API. Recommended for CI/CD and automation.
+2. **JWT** — Issued after OIDC login. Suitable for interactive use.
+
+Set the token via the `token` attribute or the `TF_REGISTRY_TOKEN` environment variable.
