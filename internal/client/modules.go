@@ -7,45 +7,36 @@ import (
 )
 
 func (c *Client) CreateModule(ctx context.Context, req CreateModuleRequest) (*Module, error) {
-	var resp struct {
-		Module Module `json:"module"`
-	}
-	if err := c.Post(ctx, "/api/v1/admin/modules/create", req, &resp); err != nil {
+	var mod Module
+	if err := c.Post(ctx, "/api/v1/admin/modules/create", req, &mod); err != nil {
 		return nil, err
 	}
-	return &resp.Module, nil
+	return &mod, nil
 }
 
 func (c *Client) GetModule(ctx context.Context, namespace, name, system string) (*Module, error) {
-	var resp struct {
-		Module Module `json:"module"`
-	}
+	var mod Module
 	path := fmt.Sprintf("/api/v1/modules/%s/%s/%s", namespace, name, system)
-	if err := c.Get(ctx, path, &resp); err != nil {
+	if err := c.Get(ctx, path, &mod); err != nil {
 		return nil, err
 	}
-	return &resp.Module, nil
+	return &mod, nil
 }
 
 func (c *Client) GetModuleByID(ctx context.Context, id string) (*Module, error) {
-	var resp struct {
-		Module Module `json:"module"`
-	}
-	if err := c.Get(ctx, "/api/v1/admin/modules/"+id, &resp); err != nil {
+	var mod Module
+	if err := c.Get(ctx, "/api/v1/admin/modules/"+id, &mod); err != nil {
 		return nil, err
 	}
-	return &resp.Module, nil
+	return &mod, nil
 }
 
-func (c *Client) UpdateModule(ctx context.Context, namespace, name, system string, req UpdateModuleRequest) (*Module, error) {
-	var resp struct {
-		Module Module `json:"module"`
-	}
-	path := fmt.Sprintf("/api/v1/modules/%s/%s/%s", namespace, name, system)
-	if err := c.Put(ctx, path, req, &resp); err != nil {
+func (c *Client) UpdateModule(ctx context.Context, id string, req UpdateModuleRequest) (*Module, error) {
+	var mod Module
+	if err := c.Put(ctx, "/api/v1/admin/modules/"+id, req, &mod); err != nil {
 		return nil, err
 	}
-	return &resp.Module, nil
+	return &mod, nil
 }
 
 func (c *Client) DeleteModule(ctx context.Context, namespace, name, system string) error {

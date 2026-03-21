@@ -104,14 +104,13 @@ func (r *ModuleSCMLinkResource) Create(ctx context.Context, req resource.CreateR
 	}
 
 	createReq := client.CreateModuleSCMLinkRequest{
-		SCMProviderID: plan.SCMProviderID.ValueString(),
-		Owner:         plan.Owner.ValueString(),
-		Repo:          plan.Repo.ValueString(),
-		Branch:        plan.Branch.ValueString(),
+		SCMProviderID:   plan.SCMProviderID.ValueString(),
+		RepositoryOwner: plan.Owner.ValueString(),
+		RepositoryName:  plan.Repo.ValueString(),
+		DefaultBranch:   plan.Branch.ValueString(),
 	}
 	if !plan.TagPattern.IsNull() && !plan.TagPattern.IsUnknown() {
-		v := plan.TagPattern.ValueString()
-		createReq.TagPattern = &v
+		createReq.TagPattern = plan.TagPattern.ValueString()
 	}
 
 	link, err := r.client.CreateModuleSCMLink(ctx, plan.ModuleID.ValueString(), createReq)
@@ -151,13 +150,12 @@ func (r *ModuleSCMLinkResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	updateReq := client.UpdateModuleSCMLinkRequest{
-		Owner:  plan.Owner.ValueString(),
-		Repo:   plan.Repo.ValueString(),
-		Branch: plan.Branch.ValueString(),
+		RepositoryOwner: plan.Owner.ValueString(),
+		RepositoryName:  plan.Repo.ValueString(),
+		DefaultBranch:   plan.Branch.ValueString(),
 	}
 	if !plan.TagPattern.IsNull() && !plan.TagPattern.IsUnknown() {
-		v := plan.TagPattern.ValueString()
-		updateReq.TagPattern = &v
+		updateReq.TagPattern = plan.TagPattern.ValueString()
 	}
 
 	link, err := r.client.UpdateModuleSCMLink(ctx, plan.ModuleID.ValueString(), updateReq)
@@ -194,14 +192,14 @@ func moduleSCMLinkToModel(l *client.ModuleSCMLink) ModuleSCMLinkResourceModel {
 	model := ModuleSCMLinkResourceModel{
 		ModuleID:      types.StringValue(l.ModuleID),
 		SCMProviderID: types.StringValue(l.SCMProviderID),
-		Owner:         types.StringValue(l.Owner),
-		Repo:          types.StringValue(l.Repo),
-		Branch:        types.StringValue(l.Branch),
+		Owner:         types.StringValue(l.RepositoryOwner),
+		Repo:          types.StringValue(l.RepositoryName),
+		Branch:        types.StringValue(l.DefaultBranch),
 		CreatedAt:     types.StringValue(l.CreatedAt),
 		UpdatedAt:     types.StringValue(l.UpdatedAt),
 	}
-	if l.TagPattern != nil {
-		model.TagPattern = types.StringValue(*l.TagPattern)
+	if l.TagPattern != "" {
+		model.TagPattern = types.StringValue(l.TagPattern)
 	} else {
 		model.TagPattern = types.StringNull()
 	}

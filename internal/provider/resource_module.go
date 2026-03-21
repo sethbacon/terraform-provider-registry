@@ -51,10 +51,10 @@ func (r *ModuleResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				},
 			},
 			"organization_id": schema.StringAttribute{
-				Description: "UUID of the organization that owns this module.",
-				Required:    true,
+				Description: "UUID of the organization that owns this module. Set by the server.",
+				Computed:    true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"namespace": schema.StringAttribute{
@@ -130,10 +130,9 @@ func (r *ModuleResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	createReq := client.CreateModuleRequest{
-		OrganizationID: plan.OrganizationID.ValueString(),
-		Namespace:      plan.Namespace.ValueString(),
-		Name:           plan.Name.ValueString(),
-		System:         plan.System.ValueString(),
+		Namespace: plan.Namespace.ValueString(),
+		Name:      plan.Name.ValueString(),
+		System:    plan.System.ValueString(),
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
@@ -190,7 +189,7 @@ func (r *ModuleResource) Update(ctx context.Context, req resource.UpdateRequest,
 		updateReq.Source = &v
 	}
 
-	mod, err := r.client.UpdateModule(ctx, plan.Namespace.ValueString(), plan.Name.ValueString(), plan.System.ValueString(), updateReq)
+	mod, err := r.client.UpdateModule(ctx, plan.ID.ValueString(), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Error Updating Module", err.Error())
 		return
@@ -227,8 +226,8 @@ func moduleToModel(m *client.Module) ModuleResourceModel {
 		Namespace:      types.StringValue(m.Namespace),
 		Name:           types.StringValue(m.Name),
 		System:         types.StringValue(m.System),
-		CreatedAt:      types.StringValue(m.CreatedAt),
-		UpdatedAt:      types.StringValue(m.UpdatedAt),
+		CreatedAt:      types.StringValue(normalizeTimestamp(m.CreatedAt)),
+		UpdatedAt:      types.StringValue(normalizeTimestamp(m.UpdatedAt)),
 	}
 	if m.Description != nil {
 		model.Description = types.StringValue(*m.Description)

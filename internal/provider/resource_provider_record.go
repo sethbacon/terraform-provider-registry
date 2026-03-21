@@ -151,7 +151,7 @@ func (r *ProviderRecordResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	p, err := r.client.GetProviderRecord(ctx, state.Namespace.ValueString(), state.Type.ValueString())
+	p, err := r.client.GetProviderRecordByID(ctx, state.ID.ValueString())
 	if err != nil {
 		if client.IsNotFound(err) {
 			resp.State.RemoveResource(ctx)
