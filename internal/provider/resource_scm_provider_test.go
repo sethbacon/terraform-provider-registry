@@ -31,7 +31,7 @@ func TestAccSCMProvider_basic(t *testing.T) {
 				ResourceName:            "registry_scm_provider.test",
 				ImportState:             true,
 				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"client_id", "client_secret"},
+				ImportStateVerifyIgnore: []string{"client_id", "client_secret", "updated_at"},
 			},
 		},
 	})

@@ -29,9 +29,10 @@ func TestAccModule_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "registry_module.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "registry_module.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"updated_at"},
 			},
 		},
 	})

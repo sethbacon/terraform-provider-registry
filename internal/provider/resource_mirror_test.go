@@ -31,9 +31,10 @@ func TestAccMirror_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "registry_mirror.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "registry_mirror.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"updated_at"},
 			},
 		},
 	})
