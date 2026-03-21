@@ -30,9 +30,9 @@ func TestAccModuleSCMLink_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:                  "registry_module_scm_link.test",
-				ImportState:                   true,
-				ImportStateVerify:             true,
+				ResourceName:                         "registry_module_scm_link.test",
+				ImportState:                          true,
+				ImportStateVerify:                    true,
 				ImportStateVerifyIdentifierAttribute: "module_id",
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					rs, ok := s.RootModule().Resources["registry_module_scm_link.test"]

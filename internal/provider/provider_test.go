@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
 	"github.com/terraform-registry/terraform-provider-registry/internal/provider"
 )
 
@@ -51,7 +52,10 @@ func TestMain(m *testing.M) {
 			fmt.Fprintf(os.Stderr, "TF_REGISTRY_TOKEN not set and dev-login failed: %v\n", err)
 			os.Exit(1)
 		}
-		os.Setenv("TF_REGISTRY_TOKEN", token)
+		if err := os.Setenv("TF_REGISTRY_TOKEN", token); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to set TF_REGISTRY_TOKEN: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	resource.TestMain(m)

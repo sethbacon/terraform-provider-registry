@@ -181,7 +181,7 @@ func (c *Client) Get(ctx context.Context, path string, result interface{}) error
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return parseResponse(resp, result)
 }
 
@@ -191,7 +191,7 @@ func (c *Client) Post(ctx context.Context, path string, body, result interface{}
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return parseResponse(resp, result)
 }
 
@@ -201,7 +201,7 @@ func (c *Client) Put(ctx context.Context, path string, body, result interface{})
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return parseResponse(resp, result)
 }
 
@@ -211,7 +211,7 @@ func (c *Client) Delete(ctx context.Context, path string) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode == http.StatusNotFound {
 		return nil // treat 404 on delete as success
 	}
