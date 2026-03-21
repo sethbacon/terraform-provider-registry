@@ -71,7 +71,7 @@ func FetchAllPages(ctx context.Context, c *Client, path, itemsKey string) ([]jso
 
 // decodeAndClose decodes the response body into v and closes the body.
 func decodeAndClose(resp *http.Response, v interface{}) error {
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return json.NewDecoder(resp.Body).Decode(v)
 	}
