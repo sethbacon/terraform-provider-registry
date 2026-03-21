@@ -151,7 +151,16 @@ func (r *APIKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	model := apikeyToModel(&created.Key)
+	model := apikeyToModel(&client.APIKey{
+		ID:             created.ID,
+		OrganizationID: plan.OrganizationID.ValueString(),
+		Name:           created.Name,
+		Description:    created.Description,
+		KeyPrefix:      created.KeyPrefix,
+		Scopes:         created.Scopes,
+		ExpiresAt:      created.ExpiresAt,
+		CreatedAt:      created.CreatedAt,
+	})
 	model.Key = types.StringValue(created.RawKey)
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }

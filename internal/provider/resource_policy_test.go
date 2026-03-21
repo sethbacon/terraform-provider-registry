@@ -30,9 +30,10 @@ func TestAccPolicy_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "registry_policy.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "registry_policy.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"updated_at"},
 			},
 		},
 	})

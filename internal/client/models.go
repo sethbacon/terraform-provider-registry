@@ -93,10 +93,17 @@ type CreateAPIKeyRequest struct {
 	ExpiresAt      *string  `json:"expires_at,omitempty"`
 }
 
-// CreateAPIKeyResponse includes the raw key value (only available on creation).
+// CreateAPIKeyResponse is the flat response body returned by POST /api/v1/apikeys.
+// The raw key value is only available at creation time.
 type CreateAPIKeyResponse struct {
-	Key    APIKey `json:"key"`
-	RawKey string `json:"raw_key,omitempty"`
+	ID          string   `json:"id"`
+	Name        string   `json:"name"`
+	Description *string  `json:"description,omitempty"`
+	RawKey      string   `json:"key"`
+	KeyPrefix   string   `json:"key_prefix"`
+	Scopes      []string `json:"scopes"`
+	ExpiresAt   *string  `json:"expires_at,omitempty"`
+	CreatedAt   string   `json:"created_at"`
 }
 
 // UpdateAPIKeyRequest is the payload for updating an API key.
@@ -219,6 +226,7 @@ type CreateModuleSCMLinkRequest struct {
 
 // UpdateModuleSCMLinkRequest is the payload for updating a module SCM link.
 type UpdateModuleSCMLinkRequest struct {
+	SCMProviderID   string `json:"provider_id"`
 	RepositoryOwner string `json:"repository_owner"`
 	RepositoryName  string `json:"repository_name"`
 	DefaultBranch   string `json:"default_branch"`

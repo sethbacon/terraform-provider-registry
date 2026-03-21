@@ -150,6 +150,7 @@ func (r *ModuleSCMLinkResource) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	updateReq := client.UpdateModuleSCMLinkRequest{
+		SCMProviderID:   plan.SCMProviderID.ValueString(),
 		RepositoryOwner: plan.Owner.ValueString(),
 		RepositoryName:  plan.Repo.ValueString(),
 		DefaultBranch:   plan.Branch.ValueString(),
