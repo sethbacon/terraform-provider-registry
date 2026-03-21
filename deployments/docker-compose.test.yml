@@ -1,0 +1,41 @@
+# Test stack for acceptance tests.
+# Uses the published backend image — no local build required.
+# Start: docker compose -f deployments/docker-compose.test.yml up -d
+# Stop:  docker compose -f deployments/docker-compose.test.yml down --volumes
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: terraform_registry
+      POSTGRES_USER: registry
+      POSTGRES_PASSWORD: registry
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registry -d terraform_registry"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  backend:
+    image: ghcr.io/sethbacon/terraform-registry-backend:latest
+    environment:
+      - TFR_DATABASE_HOST=postgres
+      - TFR_DATABASE_PORT=5432
+      - TFR_DATABASE_NAME=terraform_registry
+      - TFR_DATABASE_USER=registry
+      - TFR_DATABASE_PASSWORD=registry
+      - TFR_DATABASE_SSL_MODE=disable
+      - ENCRYPTION_KEY=test-encryption-key-must-be-32ch
+      - TFR_JWT_SECRET=test-jwt-secret-that-is-32-chars!!
+      - DEV_MODE=true
+      - TFR_SERVER_HOST=0.0.0.0
+      - TFR_SERVER_PORT=8080
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data-test:
+    driver: local
