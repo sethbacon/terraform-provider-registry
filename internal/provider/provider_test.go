@@ -69,7 +69,7 @@ func fetchDevToken(endpoint string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("POST %s: %w", url, err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
