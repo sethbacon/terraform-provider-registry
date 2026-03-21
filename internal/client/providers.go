@@ -31,10 +31,9 @@ func (c *Client) GetProviderRecordByID(ctx context.Context, id string) (*Provide
 	return &prov, nil
 }
 
-func (c *Client) UpdateProviderRecord(ctx context.Context, namespace, providerType string, req UpdateProviderRecordRequest) (*ProviderRecord, error) {
+func (c *Client) UpdateProviderRecord(ctx context.Context, id string, req UpdateProviderRecordRequest) (*ProviderRecord, error) {
 	var prov ProviderRecord
-	path := fmt.Sprintf("/api/v1/providers/%s/%s", namespace, providerType)
-	if err := c.Put(ctx, path, req, &prov); err != nil {
+	if err := c.Put(ctx, "/api/v1/admin/providers/"+id, req, &prov); err != nil {
 		return nil, err
 	}
 	return &prov, nil
