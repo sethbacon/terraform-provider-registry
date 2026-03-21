@@ -19,13 +19,15 @@ type SCMProviderResource struct {
 }
 
 type SCMProviderResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Type        types.String `tfsdk:"type"`
-	BaseURL     types.String `tfsdk:"base_url"`
-	OAuthStatus types.String `tfsdk:"oauth_status"`
-	CreatedAt   types.String `tfsdk:"created_at"`
-	UpdatedAt   types.String `tfsdk:"updated_at"`
+	ID           types.String `tfsdk:"id"`
+	Name         types.String `tfsdk:"name"`
+	Type         types.String `tfsdk:"type"`
+	BaseURL      types.String `tfsdk:"base_url"`
+	ClientID     types.String `tfsdk:"client_id"`
+	ClientSecret types.String `tfsdk:"client_secret"`
+	OAuthStatus  types.String `tfsdk:"oauth_status"`
+	CreatedAt    types.String `tfsdk:"created_at"`
+	UpdatedAt    types.String `tfsdk:"updated_at"`
 }
 
 func NewSCMProviderResource() resource.Resource {
@@ -62,6 +64,15 @@ func (r *SCMProviderResource) Schema(_ context.Context, _ resource.SchemaRequest
 				Description: "Base URL for self-hosted SCM instances (e.g., 'https://github.mycompany.com').",
 				Optional:    true,
 				Computed:    true,
+			},
+			"client_id": schema.StringAttribute{
+				Description: "OAuth application client ID. Required for OAuth-based providers (github, gitlab, azure, bitbucket cloud). Not returned after creation.",
+				Optional:    true,
+			},
+			"client_secret": schema.StringAttribute{
+				Description: "OAuth application client secret. Required for OAuth-based providers. Not returned after creation.",
+				Optional:    true,
+				Sensitive:   true,
 			},
 			"oauth_status": schema.StringAttribute{
 				Description: "Current OAuth token status.",
@@ -102,12 +113,18 @@ func (r *SCMProviderResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	createReq := client.CreateSCMProviderRequest{
-		Name: plan.Name.ValueString(),
-		Type: plan.Type.ValueString(),
+		Name:         plan.Name.ValueString(),
+		ProviderType: plan.Type.ValueString(),
 	}
 	if !plan.BaseURL.IsNull() && !plan.BaseURL.IsUnknown() {
 		v := plan.BaseURL.ValueString()
 		createReq.BaseURL = &v
+	}
+	if !plan.ClientID.IsNull() && !plan.ClientID.IsUnknown() {
+		createReq.ClientID = plan.ClientID.ValueString()
+	}
+	if !plan.ClientSecret.IsNull() && !plan.ClientSecret.IsUnknown() {
+		createReq.ClientSecret = plan.ClientSecret.ValueString()
 	}
 
 	scm, err := r.client.CreateSCMProvider(ctx, createReq)
@@ -116,7 +133,11 @@ func (r *SCMProviderResource) Create(ctx context.Context, req resource.CreateReq
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, scmProviderToModel(scm))...)
+	model := scmProviderToModel(scm)
+	// Preserve write-only credentials from plan — not returned by API
+	model.ClientID = plan.ClientID
+	model.ClientSecret = plan.ClientSecret
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func (r *SCMProviderResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -136,12 +157,18 @@ func (r *SCMProviderResource) Read(ctx context.Context, req resource.ReadRequest
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, scmProviderToModel(scm))...)
+	model := scmProviderToModel(scm)
+	// Preserve write-only credentials from state — not returned by API
+	model.ClientID = state.ClientID
+	model.ClientSecret = state.ClientSecret
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func (r *SCMProviderResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var plan SCMProviderResourceModel
+	var state SCMProviderResourceModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -160,7 +187,11 @@ func (r *SCMProviderResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, scmProviderToModel(scm))...)
+	model := scmProviderToModel(scm)
+	// Preserve write-only credentials from plan (or fall back to state)
+	model.ClientID = plan.ClientID
+	model.ClientSecret = plan.ClientSecret
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func (r *SCMProviderResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
@@ -181,16 +212,20 @@ func (r *SCMProviderResource) ImportState(ctx context.Context, req resource.Impo
 		resp.Diagnostics.AddError("Error Importing SCM Provider", err.Error())
 		return
 	}
-	resp.Diagnostics.Append(resp.State.Set(ctx, scmProviderToModel(scm))...)
+	model := scmProviderToModel(scm)
+	// Credentials are not recoverable on import
+	model.ClientID = types.StringNull()
+	model.ClientSecret = types.StringNull()
+	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
 func scmProviderToModel(s *client.SCMProvider) SCMProviderResourceModel {
 	model := SCMProviderResourceModel{
 		ID:        types.StringValue(s.ID),
 		Name:      types.StringValue(s.Name),
-		Type:      types.StringValue(s.Type),
-		CreatedAt: types.StringValue(s.CreatedAt),
-		UpdatedAt: types.StringValue(s.UpdatedAt),
+		Type:      types.StringValue(s.ProviderType),
+		CreatedAt: types.StringValue(normalizeTimestamp(s.CreatedAt)),
+		UpdatedAt: types.StringValue(normalizeTimestamp(s.UpdatedAt)),
 	}
 	if s.BaseURL != nil {
 		model.BaseURL = types.StringValue(*s.BaseURL)

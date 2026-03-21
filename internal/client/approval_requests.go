@@ -7,23 +7,19 @@ import (
 )
 
 func (c *Client) CreateApprovalRequest(ctx context.Context, req CreateApprovalRequestRequest) (*ApprovalRequest, error) {
-	var resp struct {
-		ApprovalRequest ApprovalRequest `json:"approval_request"`
-	}
-	if err := c.Post(ctx, "/api/v1/admin/approvals", req, &resp); err != nil {
+	var ar ApprovalRequest
+	if err := c.Post(ctx, "/api/v1/admin/approvals", req, &ar); err != nil {
 		return nil, err
 	}
-	return &resp.ApprovalRequest, nil
+	return &ar, nil
 }
 
 func (c *Client) GetApprovalRequest(ctx context.Context, id string) (*ApprovalRequest, error) {
-	var resp struct {
-		ApprovalRequest ApprovalRequest `json:"approval_request"`
-	}
-	if err := c.Get(ctx, "/api/v1/admin/approvals/"+id, &resp); err != nil {
+	var ar ApprovalRequest
+	if err := c.Get(ctx, "/api/v1/admin/approvals/"+id, &ar); err != nil {
 		return nil, err
 	}
-	return &resp.ApprovalRequest, nil
+	return &ar, nil
 }
 
 func (c *Client) DeleteApprovalRequest(ctx context.Context, id string) error {

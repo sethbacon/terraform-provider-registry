@@ -90,7 +90,7 @@ func (d *SCMProvidersDataSource) Read(ctx context.Context, req datasource.ReadRe
 		item := SCMProviderDSItem{
 			ID:        types.StringValue(s.ID),
 			Name:      types.StringValue(s.Name),
-			Type:      types.StringValue(s.Type),
+			Type:      types.StringValue(s.ProviderType),
 			CreatedAt: types.StringValue(s.CreatedAt),
 			UpdatedAt: types.StringValue(s.UpdatedAt),
 		}

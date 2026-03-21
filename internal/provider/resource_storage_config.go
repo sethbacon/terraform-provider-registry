@@ -54,7 +54,7 @@ func (r *StorageConfigResource) Schema(_ context.Context, _ resource.SchemaReque
 				Required:    true,
 			},
 			"config": schema.MapAttribute{
-				Description: "Backend-specific configuration key-value pairs (e.g., bucket name, credentials). All values are stored encrypted.",
+				Description: "Backend-specific configuration key-value pairs (e.g., local_base_path, s3_bucket). All values are stored encrypted.",
 				Required:    true,
 				Sensitive:   true,
 				ElementType: types.StringType,
@@ -112,11 +112,7 @@ func (r *StorageConfigResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	createReq := client.CreateStorageConfigRequest{
-		Backend:  plan.Backend.ValueString(),
-		Config:   configMap,
-		Activate: plan.Activate.ValueBool(),
-	}
+	createReq := buildStorageCreateRequest(plan.Backend.ValueString(), configMap)
 
 	sc, err := r.client.CreateStorageConfig(ctx, createReq)
 	if err != nil {
@@ -124,7 +120,15 @@ func (r *StorageConfigResource) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	model := storageConfigToModel(ctx, sc)
+	if plan.Activate.ValueBool() {
+		if err := r.client.ActivateStorageConfig(ctx, sc.ID); err != nil {
+			resp.Diagnostics.AddError("Error Activating Storage Config", err.Error())
+			return
+		}
+		sc.Active = true
+	}
+
+	model := storageConfigToModel(ctx, sc, configMap)
 	model.Activate = plan.Activate
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
@@ -146,7 +150,11 @@ func (r *StorageConfigResource) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	model := storageConfigToModel(ctx, sc)
+	// Preserve the config map from state since API redacts credentials
+	var existingConfig map[string]string
+	state.Config.ElementsAs(ctx, &existingConfig, false)
+
+	model := storageConfigToModel(ctx, sc, existingConfig)
 	model.Activate = state.Activate
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
@@ -164,10 +172,9 @@ func (r *StorageConfigResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	sc, err := r.client.UpdateStorageConfig(ctx, plan.ID.ValueString(), client.UpdateStorageConfigRequest{
-		Backend: plan.Backend.ValueString(),
-		Config:  configMap,
-	})
+	updateReq := buildStorageUpdateRequest(plan.Backend.ValueString(), configMap)
+
+	sc, err := r.client.UpdateStorageConfig(ctx, plan.ID.ValueString(), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Error Updating Storage Config", err.Error())
 		return
@@ -181,7 +188,7 @@ func (r *StorageConfigResource) Update(ctx context.Context, req resource.UpdateR
 		sc.Active = true
 	}
 
-	model := storageConfigToModel(ctx, sc)
+	model := storageConfigToModel(ctx, sc, configMap)
 	model.Activate = plan.Activate
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
@@ -204,19 +211,111 @@ func (r *StorageConfigResource) ImportState(ctx context.Context, req resource.Im
 		resp.Diagnostics.AddError("Error Importing Storage Config", err.Error())
 		return
 	}
-	model := storageConfigToModel(ctx, sc)
+	model := storageConfigToModel(ctx, sc, nil)
 	model.Activate = types.BoolValue(false)
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-func storageConfigToModel(ctx context.Context, sc *client.StorageConfig) StorageConfigResourceModel {
-	configMap, _ := types.MapValueFrom(ctx, types.StringType, sc.Config)
+func buildStorageCreateRequest(backend string, config map[string]string) client.CreateStorageConfigRequest {
+	req := client.CreateStorageConfigRequest{BackendType: backend}
+	for k, v := range config {
+		switch k {
+		case "local_base_path":
+			req.LocalBasePath = v
+		case "azure_account_name":
+			req.AzureAccountName = v
+		case "azure_account_key":
+			req.AzureAccountKey = v
+		case "azure_container_name":
+			req.AzureContainerName = v
+		case "azure_cdn_url":
+			req.AzureCDNURL = v
+		case "s3_endpoint":
+			req.S3Endpoint = v
+		case "s3_region":
+			req.S3Region = v
+		case "s3_bucket":
+			req.S3Bucket = v
+		case "s3_auth_method":
+			req.S3AuthMethod = v
+		case "s3_access_key_id":
+			req.S3AccessKeyID = v
+		case "s3_secret_access_key":
+			req.S3SecretAccessKey = v
+		case "gcs_bucket":
+			req.GCSBucket = v
+		case "gcs_project_id":
+			req.GCSProjectID = v
+		case "gcs_auth_method":
+			req.GCSAuthMethod = v
+		case "gcs_credentials_file":
+			req.GCSCredentialsFile = v
+		case "gcs_credentials_json":
+			req.GCSCredentialsJSON = v
+		case "gcs_endpoint":
+			req.GCSEndpoint = v
+		}
+	}
+	return req
+}
+
+func buildStorageUpdateRequest(backend string, config map[string]string) client.UpdateStorageConfigRequest {
+	req := client.UpdateStorageConfigRequest{BackendType: backend}
+	for k, v := range config {
+		switch k {
+		case "local_base_path":
+			req.LocalBasePath = v
+		case "azure_account_name":
+			req.AzureAccountName = v
+		case "azure_account_key":
+			req.AzureAccountKey = v
+		case "azure_container_name":
+			req.AzureContainerName = v
+		case "azure_cdn_url":
+			req.AzureCDNURL = v
+		case "s3_endpoint":
+			req.S3Endpoint = v
+		case "s3_region":
+			req.S3Region = v
+		case "s3_bucket":
+			req.S3Bucket = v
+		case "s3_auth_method":
+			req.S3AuthMethod = v
+		case "s3_access_key_id":
+			req.S3AccessKeyID = v
+		case "s3_secret_access_key":
+			req.S3SecretAccessKey = v
+		case "gcs_bucket":
+			req.GCSBucket = v
+		case "gcs_project_id":
+			req.GCSProjectID = v
+		case "gcs_auth_method":
+			req.GCSAuthMethod = v
+		case "gcs_credentials_file":
+			req.GCSCredentialsFile = v
+		case "gcs_credentials_json":
+			req.GCSCredentialsJSON = v
+		case "gcs_endpoint":
+			req.GCSEndpoint = v
+		}
+	}
+	return req
+}
+
+func storageConfigToModel(ctx context.Context, sc *client.StorageConfig, preservedConfig map[string]string) StorageConfigResourceModel {
+	// Use preserved config from state if available (API redacts credentials)
+	configMap := preservedConfig
+	if configMap == nil {
+		configMap = map[string]string{}
+	}
+
+	cfgValue, _ := types.MapValueFrom(ctx, types.StringType, configMap)
 	return StorageConfigResourceModel{
 		ID:        types.StringValue(sc.ID),
-		Backend:   types.StringValue(sc.Backend),
-		Config:    configMap,
+		Backend:   types.StringValue(sc.BackendType),
+		Config:    cfgValue,
 		Active:    types.BoolValue(sc.Active),
-		CreatedAt: types.StringValue(sc.CreatedAt),
-		UpdatedAt: types.StringValue(sc.UpdatedAt),
+		CreatedAt: types.StringValue(normalizeTimestamp(sc.CreatedAt)),
+		UpdatedAt: types.StringValue(normalizeTimestamp(sc.UpdatedAt)),
 	}
 }

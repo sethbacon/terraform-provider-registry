@@ -7,33 +7,27 @@ import (
 )
 
 func (c *Client) CreateTerraformMirror(ctx context.Context, req CreateTerraformMirrorRequest) (*TerraformMirror, error) {
-	var resp struct {
-		Mirror TerraformMirror `json:"mirror"`
-	}
-	if err := c.Post(ctx, "/api/v1/admin/terraform-mirrors", req, &resp); err != nil {
+	var mirror TerraformMirror
+	if err := c.Post(ctx, "/api/v1/admin/terraform-mirrors", req, &mirror); err != nil {
 		return nil, err
 	}
-	return &resp.Mirror, nil
+	return &mirror, nil
 }
 
 func (c *Client) GetTerraformMirror(ctx context.Context, id string) (*TerraformMirror, error) {
-	var resp struct {
-		Mirror TerraformMirror `json:"mirror"`
-	}
-	if err := c.Get(ctx, "/api/v1/admin/terraform-mirrors/"+id, &resp); err != nil {
+	var mirror TerraformMirror
+	if err := c.Get(ctx, "/api/v1/admin/terraform-mirrors/"+id, &mirror); err != nil {
 		return nil, err
 	}
-	return &resp.Mirror, nil
+	return &mirror, nil
 }
 
 func (c *Client) UpdateTerraformMirror(ctx context.Context, id string, req UpdateTerraformMirrorRequest) (*TerraformMirror, error) {
-	var resp struct {
-		Mirror TerraformMirror `json:"mirror"`
-	}
-	if err := c.Put(ctx, "/api/v1/admin/terraform-mirrors/"+id, req, &resp); err != nil {
+	var mirror TerraformMirror
+	if err := c.Put(ctx, "/api/v1/admin/terraform-mirrors/"+id, req, &mirror); err != nil {
 		return nil, err
 	}
-	return &resp.Mirror, nil
+	return &mirror, nil
 }
 
 func (c *Client) DeleteTerraformMirror(ctx context.Context, id string) error {
@@ -41,7 +35,7 @@ func (c *Client) DeleteTerraformMirror(ctx context.Context, id string) error {
 }
 
 func (c *Client) ListTerraformMirrors(ctx context.Context) ([]TerraformMirror, error) {
-	items, err := FetchAllPages(ctx, c, "/api/v1/admin/terraform-mirrors", "mirrors")
+	items, err := FetchAllPages(ctx, c, "/api/v1/admin/terraform-mirrors", "configs")
 	if err != nil {
 		return nil, err
 	}

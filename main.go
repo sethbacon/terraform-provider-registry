@@ -9,6 +9,8 @@ import (
 	"github.com/terraform-registry/terraform-provider-registry/internal/provider"
 )
 
+//go:generate go run github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name registry
+
 // version is set by GoReleaser via ldflags.
 var version = "dev"
 

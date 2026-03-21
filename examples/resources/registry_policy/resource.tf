@@ -1,8 +1,8 @@
-resource "registry_policy" "require_approval" {
-  name        = "require-approval"
-  description = "Requires approval before mirror sync"
-  rules       = jsonencode({
-    require_approval = true
-    approvers        = ["admin"]
-  })
+resource "registry_policy" "allow_hashicorp" {
+  name              = "allow-hashicorp"
+  description       = "Allow mirroring hashicorp providers"
+  policy_type       = "allow"
+  namespace_pattern = "hashicorp/*"
+  is_active         = true
+  requires_approval = false
 }

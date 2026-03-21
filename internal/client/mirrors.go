@@ -7,33 +7,27 @@ import (
 )
 
 func (c *Client) CreateMirror(ctx context.Context, req CreateMirrorRequest) (*Mirror, error) {
-	var resp struct {
-		Mirror Mirror `json:"mirror"`
-	}
-	if err := c.Post(ctx, "/api/v1/admin/mirrors", req, &resp); err != nil {
+	var mirror Mirror
+	if err := c.Post(ctx, "/api/v1/admin/mirrors", req, &mirror); err != nil {
 		return nil, err
 	}
-	return &resp.Mirror, nil
+	return &mirror, nil
 }
 
 func (c *Client) GetMirror(ctx context.Context, id string) (*Mirror, error) {
-	var resp struct {
-		Mirror Mirror `json:"mirror"`
-	}
-	if err := c.Get(ctx, "/api/v1/admin/mirrors/"+id, &resp); err != nil {
+	var mirror Mirror
+	if err := c.Get(ctx, "/api/v1/admin/mirrors/"+id, &mirror); err != nil {
 		return nil, err
 	}
-	return &resp.Mirror, nil
+	return &mirror, nil
 }
 
 func (c *Client) UpdateMirror(ctx context.Context, id string, req UpdateMirrorRequest) (*Mirror, error) {
-	var resp struct {
-		Mirror Mirror `json:"mirror"`
-	}
-	if err := c.Put(ctx, "/api/v1/admin/mirrors/"+id, req, &resp); err != nil {
+	var mirror Mirror
+	if err := c.Put(ctx, "/api/v1/admin/mirrors/"+id, req, &mirror); err != nil {
 		return nil, err
 	}
-	return &resp.Mirror, nil
+	return &mirror, nil
 }
 
 func (c *Client) DeleteMirror(ctx context.Context, id string) error {

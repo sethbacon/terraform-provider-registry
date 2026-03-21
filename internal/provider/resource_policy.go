@@ -5,6 +5,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -19,12 +21,18 @@ type PolicyResource struct {
 }
 
 type PolicyResourceModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Rules       types.String `tfsdk:"rules"`
-	CreatedAt   types.String `tfsdk:"created_at"`
-	UpdatedAt   types.String `tfsdk:"updated_at"`
+	ID               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	Description      types.String `tfsdk:"description"`
+	PolicyType       types.String `tfsdk:"policy_type"`
+	UpstreamRegistry types.String `tfsdk:"upstream_registry"`
+	NamespacePattern types.String `tfsdk:"namespace_pattern"`
+	ProviderPattern  types.String `tfsdk:"provider_pattern"`
+	Priority         types.Int64  `tfsdk:"priority"`
+	IsActive         types.Bool   `tfsdk:"is_active"`
+	RequiresApproval types.Bool   `tfsdk:"requires_approval"`
+	CreatedAt        types.String `tfsdk:"created_at"`
+	UpdatedAt        types.String `tfsdk:"updated_at"`
 }
 
 func NewPolicyResource() resource.Resource {
@@ -55,9 +63,42 @@ func (r *PolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Computed:    true,
 			},
-			"rules": schema.StringAttribute{
-				Description: "JSON-encoded policy rules.",
+			"policy_type": schema.StringAttribute{
+				Description: "Policy type: 'allow' or 'deny'.",
 				Required:    true,
+			},
+			"upstream_registry": schema.StringAttribute{
+				Description: "Upstream registry URL to match.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"namespace_pattern": schema.StringAttribute{
+				Description: "Namespace pattern to match (supports wildcards).",
+				Optional:    true,
+				Computed:    true,
+			},
+			"provider_pattern": schema.StringAttribute{
+				Description: "Provider pattern to match (supports wildcards).",
+				Optional:    true,
+				Computed:    true,
+			},
+			"priority": schema.Int64Attribute{
+				Description: "Policy evaluation priority (lower numbers evaluated first).",
+				Optional:    true,
+				Computed:    true,
+				Default:     int64default.StaticInt64(0),
+			},
+			"is_active": schema.BoolAttribute{
+				Description: "Whether the policy is active.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+			},
+			"requires_approval": schema.BoolAttribute{
+				Description: "Whether matching mirrors require manual approval.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"created_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp when the policy was created.",
@@ -94,12 +135,27 @@ func (r *PolicyResource) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	createReq := client.CreatePolicyRequest{
-		Name:  plan.Name.ValueString(),
-		Rules: plan.Rules.ValueString(),
+		Name:             plan.Name.ValueString(),
+		PolicyType:       plan.PolicyType.ValueString(),
+		Priority:         int(plan.Priority.ValueInt64()),
+		IsActive:         plan.IsActive.ValueBool(),
+		RequiresApproval: plan.RequiresApproval.ValueBool(),
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
 		createReq.Description = &v
+	}
+	if !plan.UpstreamRegistry.IsNull() && !plan.UpstreamRegistry.IsUnknown() {
+		v := plan.UpstreamRegistry.ValueString()
+		createReq.UpstreamRegistry = &v
+	}
+	if !plan.NamespacePattern.IsNull() && !plan.NamespacePattern.IsUnknown() {
+		v := plan.NamespacePattern.ValueString()
+		createReq.NamespacePattern = &v
+	}
+	if !plan.ProviderPattern.IsNull() && !plan.ProviderPattern.IsUnknown() {
+		v := plan.ProviderPattern.ValueString()
+		createReq.ProviderPattern = &v
 	}
 
 	p, err := r.client.CreatePolicy(ctx, createReq)
@@ -139,12 +195,27 @@ func (r *PolicyResource) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	updateReq := client.UpdatePolicyRequest{
-		Name:  plan.Name.ValueString(),
-		Rules: plan.Rules.ValueString(),
+		Name:             plan.Name.ValueString(),
+		PolicyType:       plan.PolicyType.ValueString(),
+		Priority:         int(plan.Priority.ValueInt64()),
+		IsActive:         plan.IsActive.ValueBool(),
+		RequiresApproval: plan.RequiresApproval.ValueBool(),
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
 		updateReq.Description = &v
+	}
+	if !plan.UpstreamRegistry.IsNull() && !plan.UpstreamRegistry.IsUnknown() {
+		v := plan.UpstreamRegistry.ValueString()
+		updateReq.UpstreamRegistry = &v
+	}
+	if !plan.NamespacePattern.IsNull() && !plan.NamespacePattern.IsUnknown() {
+		v := plan.NamespacePattern.ValueString()
+		updateReq.NamespacePattern = &v
+	}
+	if !plan.ProviderPattern.IsNull() && !plan.ProviderPattern.IsUnknown() {
+		v := plan.ProviderPattern.ValueString()
+		updateReq.ProviderPattern = &v
 	}
 
 	p, err := r.client.UpdatePolicy(ctx, plan.ID.ValueString(), updateReq)
@@ -179,16 +250,34 @@ func (r *PolicyResource) ImportState(ctx context.Context, req resource.ImportSta
 
 func policyToModel(p *client.Policy) PolicyResourceModel {
 	model := PolicyResourceModel{
-		ID:        types.StringValue(p.ID),
-		Name:      types.StringValue(p.Name),
-		Rules:     types.StringValue(p.Rules),
-		CreatedAt: types.StringValue(p.CreatedAt),
-		UpdatedAt: types.StringValue(p.UpdatedAt),
+		ID:               types.StringValue(p.ID),
+		Name:             types.StringValue(p.Name),
+		PolicyType:       types.StringValue(p.PolicyType),
+		Priority:         types.Int64Value(int64(p.Priority)),
+		IsActive:         types.BoolValue(p.IsActive),
+		RequiresApproval: types.BoolValue(p.RequiresApproval),
+		CreatedAt:        types.StringValue(normalizeTimestamp(p.CreatedAt)),
+		UpdatedAt:        types.StringValue(normalizeTimestamp(p.UpdatedAt)),
 	}
 	if p.Description != nil {
 		model.Description = types.StringValue(*p.Description)
 	} else {
 		model.Description = types.StringNull()
+	}
+	if p.UpstreamRegistry != nil {
+		model.UpstreamRegistry = types.StringValue(*p.UpstreamRegistry)
+	} else {
+		model.UpstreamRegistry = types.StringNull()
+	}
+	if p.NamespacePattern != nil {
+		model.NamespacePattern = types.StringValue(*p.NamespacePattern)
+	} else {
+		model.NamespacePattern = types.StringNull()
+	}
+	if p.ProviderPattern != nil {
+		model.ProviderPattern = types.StringValue(*p.ProviderPattern)
+	} else {
+		model.ProviderPattern = types.StringNull()
 	}
 	return model
 }

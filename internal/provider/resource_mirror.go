@@ -170,9 +170,15 @@ func (r *MirrorResource) Create(ctx context.Context, req resource.CreateRequest,
 		v := plan.VersionFilter.ValueString()
 		createReq.VersionFilter = &v
 	}
-	resp.Diagnostics.Append(plan.NamespaceFilter.ElementsAs(ctx, &createReq.NamespaceFilter, false)...)
-	resp.Diagnostics.Append(plan.ProviderFilter.ElementsAs(ctx, &createReq.ProviderFilter, false)...)
-	resp.Diagnostics.Append(plan.PlatformFilter.ElementsAs(ctx, &createReq.PlatformFilter, false)...)
+	if !plan.NamespaceFilter.IsNull() && !plan.NamespaceFilter.IsUnknown() {
+		resp.Diagnostics.Append(plan.NamespaceFilter.ElementsAs(ctx, &createReq.NamespaceFilter, false)...)
+	}
+	if !plan.ProviderFilter.IsNull() && !plan.ProviderFilter.IsUnknown() {
+		resp.Diagnostics.Append(plan.ProviderFilter.ElementsAs(ctx, &createReq.ProviderFilter, false)...)
+	}
+	if !plan.PlatformFilter.IsNull() && !plan.PlatformFilter.IsUnknown() {
+		resp.Diagnostics.Append(plan.PlatformFilter.ElementsAs(ctx, &createReq.PlatformFilter, false)...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -231,9 +237,15 @@ func (r *MirrorResource) Update(ctx context.Context, req resource.UpdateRequest,
 		v := plan.VersionFilter.ValueString()
 		updateReq.VersionFilter = &v
 	}
-	resp.Diagnostics.Append(plan.NamespaceFilter.ElementsAs(ctx, &updateReq.NamespaceFilter, false)...)
-	resp.Diagnostics.Append(plan.ProviderFilter.ElementsAs(ctx, &updateReq.ProviderFilter, false)...)
-	resp.Diagnostics.Append(plan.PlatformFilter.ElementsAs(ctx, &updateReq.PlatformFilter, false)...)
+	if !plan.NamespaceFilter.IsNull() && !plan.NamespaceFilter.IsUnknown() {
+		resp.Diagnostics.Append(plan.NamespaceFilter.ElementsAs(ctx, &updateReq.NamespaceFilter, false)...)
+	}
+	if !plan.ProviderFilter.IsNull() && !plan.ProviderFilter.IsUnknown() {
+		resp.Diagnostics.Append(plan.ProviderFilter.ElementsAs(ctx, &updateReq.ProviderFilter, false)...)
+	}
+	if !plan.PlatformFilter.IsNull() && !plan.PlatformFilter.IsUnknown() {
+		resp.Diagnostics.Append(plan.PlatformFilter.ElementsAs(ctx, &updateReq.PlatformFilter, false)...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -269,9 +281,21 @@ func (r *MirrorResource) ImportState(ctx context.Context, req resource.ImportSta
 }
 
 func mirrorToModel(ctx context.Context, m *client.Mirror) MirrorResourceModel {
-	nsList, _ := types.ListValueFrom(ctx, types.StringType, m.NamespaceFilter)
-	provList, _ := types.ListValueFrom(ctx, types.StringType, m.ProviderFilter)
-	platList, _ := types.ListValueFrom(ctx, types.StringType, m.PlatformFilter)
+	nsf := m.NamespaceFilter
+	if nsf == nil {
+		nsf = []string{}
+	}
+	prf := m.ProviderFilter
+	if prf == nil {
+		prf = []string{}
+	}
+	plf := m.PlatformFilter
+	if plf == nil {
+		plf = []string{}
+	}
+	nsList, _ := types.ListValueFrom(ctx, types.StringType, nsf)
+	provList, _ := types.ListValueFrom(ctx, types.StringType, prf)
+	platList, _ := types.ListValueFrom(ctx, types.StringType, plf)
 
 	model := MirrorResourceModel{
 		ID:                  types.StringValue(m.ID),
@@ -282,8 +306,8 @@ func mirrorToModel(ctx context.Context, m *client.Mirror) MirrorResourceModel {
 		NamespaceFilter:     nsList,
 		ProviderFilter:      provList,
 		PlatformFilter:      platList,
-		CreatedAt:           types.StringValue(m.CreatedAt),
-		UpdatedAt:           types.StringValue(m.UpdatedAt),
+		CreatedAt:           types.StringValue(normalizeTimestamp(m.CreatedAt)),
+		UpdatedAt:           types.StringValue(normalizeTimestamp(m.UpdatedAt)),
 	}
 	if m.Description != nil {
 		model.Description = types.StringValue(*m.Description)

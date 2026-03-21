@@ -7,45 +7,37 @@ import (
 )
 
 func (c *Client) CreateProviderRecord(ctx context.Context, req CreateProviderRecordRequest) (*ProviderRecord, error) {
-	var resp struct {
-		Provider ProviderRecord `json:"provider"`
-	}
-	if err := c.Post(ctx, "/api/v1/admin/providers/create", req, &resp); err != nil {
+	var prov ProviderRecord
+	if err := c.Post(ctx, "/api/v1/admin/providers", req, &prov); err != nil {
 		return nil, err
 	}
-	return &resp.Provider, nil
+	return &prov, nil
 }
 
 func (c *Client) GetProviderRecord(ctx context.Context, namespace, providerType string) (*ProviderRecord, error) {
-	var resp struct {
-		Provider ProviderRecord `json:"provider"`
-	}
+	var prov ProviderRecord
 	path := fmt.Sprintf("/api/v1/providers/%s/%s", namespace, providerType)
-	if err := c.Get(ctx, path, &resp); err != nil {
+	if err := c.Get(ctx, path, &prov); err != nil {
 		return nil, err
 	}
-	return &resp.Provider, nil
+	return &prov, nil
 }
 
 func (c *Client) GetProviderRecordByID(ctx context.Context, id string) (*ProviderRecord, error) {
-	var resp struct {
-		Provider ProviderRecord `json:"provider"`
-	}
-	if err := c.Get(ctx, "/api/v1/admin/providers/"+id, &resp); err != nil {
+	var prov ProviderRecord
+	if err := c.Get(ctx, "/api/v1/admin/providers/"+id, &prov); err != nil {
 		return nil, err
 	}
-	return &resp.Provider, nil
+	return &prov, nil
 }
 
 func (c *Client) UpdateProviderRecord(ctx context.Context, namespace, providerType string, req UpdateProviderRecordRequest) (*ProviderRecord, error) {
-	var resp struct {
-		Provider ProviderRecord `json:"provider"`
-	}
+	var prov ProviderRecord
 	path := fmt.Sprintf("/api/v1/providers/%s/%s", namespace, providerType)
-	if err := c.Put(ctx, path, req, &resp); err != nil {
+	if err := c.Put(ctx, path, req, &prov); err != nil {
 		return nil, err
 	}
-	return &resp.Provider, nil
+	return &prov, nil
 }
 
 func (c *Client) DeleteProviderRecord(ctx context.Context, namespace, providerType string) error {

@@ -168,7 +168,9 @@ func (r *TerraformMirrorResource) Create(ctx context.Context, req resource.Creat
 		v := plan.VersionFilter.ValueString()
 		createReq.VersionFilter = &v
 	}
-	resp.Diagnostics.Append(plan.PlatformFilter.ElementsAs(ctx, &createReq.PlatformFilter, false)...)
+	if !plan.PlatformFilter.IsNull() && !plan.PlatformFilter.IsUnknown() {
+		resp.Diagnostics.Append(plan.PlatformFilter.ElementsAs(ctx, &createReq.PlatformFilter, false)...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -226,7 +228,9 @@ func (r *TerraformMirrorResource) Update(ctx context.Context, req resource.Updat
 		v := plan.VersionFilter.ValueString()
 		updateReq.VersionFilter = &v
 	}
-	resp.Diagnostics.Append(plan.PlatformFilter.ElementsAs(ctx, &updateReq.PlatformFilter, false)...)
+	if !plan.PlatformFilter.IsNull() && !plan.PlatformFilter.IsUnknown() {
+		resp.Diagnostics.Append(plan.PlatformFilter.ElementsAs(ctx, &updateReq.PlatformFilter, false)...)
+	}
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -262,7 +266,11 @@ func (r *TerraformMirrorResource) ImportState(ctx context.Context, req resource.
 }
 
 func tfMirrorToModel(ctx context.Context, m *client.TerraformMirror) TerraformMirrorResourceModel {
-	platList, _ := types.ListValueFrom(ctx, types.StringType, m.PlatformFilter)
+	plf := m.PlatformFilter
+	if plf == nil {
+		plf = []string{}
+	}
+	platList, _ := types.ListValueFrom(ctx, types.StringType, plf)
 
 	model := TerraformMirrorResourceModel{
 		ID:                types.StringValue(m.ID),
@@ -274,8 +282,8 @@ func tfMirrorToModel(ctx context.Context, m *client.TerraformMirror) TerraformMi
 		StableOnly:        types.BoolValue(m.StableOnly),
 		SyncIntervalHours: types.Int64Value(int64(m.SyncIntervalHours)),
 		PlatformFilter:    platList,
-		CreatedAt:         types.StringValue(m.CreatedAt),
-		UpdatedAt:         types.StringValue(m.UpdatedAt),
+		CreatedAt:         types.StringValue(normalizeTimestamp(m.CreatedAt)),
+		UpdatedAt:         types.StringValue(normalizeTimestamp(m.UpdatedAt)),
 	}
 	if m.Description != nil {
 		model.Description = types.StringValue(*m.Description)

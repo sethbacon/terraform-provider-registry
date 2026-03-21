@@ -219,8 +219,8 @@ func roleTemplateToModel(rt *client.RoleTemplate) RoleTemplateResourceModel {
 		DisplayName: types.StringValue(rt.DisplayName),
 		Scopes:      scopeList,
 		IsSystem:    types.BoolValue(rt.IsSystem),
-		CreatedAt:   types.StringValue(rt.CreatedAt),
-		UpdatedAt:   types.StringValue(rt.UpdatedAt),
+		CreatedAt:   types.StringValue(normalizeTimestamp(rt.CreatedAt)),
+		UpdatedAt:   types.StringValue(normalizeTimestamp(rt.UpdatedAt)),
 	}
 	if rt.Description != nil {
 		model.Description = types.StringValue(*rt.Description)

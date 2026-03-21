@@ -27,15 +27,15 @@ func (c *Client) ListAuditLogs(ctx context.Context, action, resourceType string,
 	}
 
 	var raw struct {
-		AuditLogs  []json.RawMessage `json:"audit_logs"`
+		Logs       []json.RawMessage `json:"logs"`
 		Pagination Pagination        `json:"pagination"`
 	}
 	if err := c.Get(ctx, path, &raw); err != nil {
 		return nil, 0, err
 	}
 
-	logs := make([]AuditLog, 0, len(raw.AuditLogs))
-	for _, r := range raw.AuditLogs {
+	logs := make([]AuditLog, 0, len(raw.Logs))
+	for _, r := range raw.Logs {
 		var l AuditLog
 		if err := json.Unmarshal(r, &l); err != nil {
 			return nil, 0, fmt.Errorf("unmarshaling audit log: %w", err)

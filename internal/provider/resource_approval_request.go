@@ -19,14 +19,16 @@ type ApprovalRequestResource struct {
 }
 
 type ApprovalRequestResourceModel struct {
-	ID            types.String `tfsdk:"id"`
-	MirrorID      types.String `tfsdk:"mirror_id"`
-	Justification types.String `tfsdk:"justification"`
-	ReviewStatus  types.String `tfsdk:"review_status"`
-	ReviewerID    types.String `tfsdk:"reviewer_id"`
-	ReviewNote    types.String `tfsdk:"review_note"`
-	CreatedAt     types.String `tfsdk:"created_at"`
-	UpdatedAt     types.String `tfsdk:"updated_at"`
+	ID                types.String `tfsdk:"id"`
+	MirrorID          types.String `tfsdk:"mirror_id"`
+	ProviderNamespace types.String `tfsdk:"provider_namespace"`
+	ProviderName      types.String `tfsdk:"provider_name"`
+	Justification     types.String `tfsdk:"justification"`
+	ReviewStatus      types.String `tfsdk:"review_status"`
+	ReviewerID        types.String `tfsdk:"reviewer_id"`
+	ReviewNote        types.String `tfsdk:"review_note"`
+	CreatedAt         types.String `tfsdk:"created_at"`
+	UpdatedAt         types.String `tfsdk:"updated_at"`
 }
 
 func NewApprovalRequestResource() resource.Resource {
@@ -55,9 +57,25 @@ func (r *ApprovalRequestResource) Schema(_ context.Context, _ resource.SchemaReq
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"justification": schema.StringAttribute{
-				Description: "Justification for the request.",
+			"provider_namespace": schema.StringAttribute{
+				Description: "Provider namespace to request access for (e.g., 'hashicorp').",
 				Required:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"provider_name": schema.StringAttribute{
+				Description: "Specific provider name within the namespace. Omit to request access for the entire namespace.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+				},
+			},
+			"justification": schema.StringAttribute{
+				Description: "Justification / reason for the request.",
+				Optional:    true,
+				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -108,10 +126,19 @@ func (r *ApprovalRequestResource) Create(ctx context.Context, req resource.Creat
 		return
 	}
 
-	ar, err := r.client.CreateApprovalRequest(ctx, client.CreateApprovalRequestRequest{
-		MirrorID:      plan.MirrorID.ValueString(),
-		Justification: plan.Justification.ValueString(),
-	})
+	createReq := client.CreateApprovalRequestRequest{
+		MirrorConfigID:    plan.MirrorID.ValueString(),
+		ProviderNamespace: plan.ProviderNamespace.ValueString(),
+	}
+	if !plan.ProviderName.IsNull() && !plan.ProviderName.IsUnknown() {
+		v := plan.ProviderName.ValueString()
+		createReq.ProviderName = &v
+	}
+	if !plan.Justification.IsNull() && !plan.Justification.IsUnknown() {
+		createReq.Reason = plan.Justification.ValueString()
+	}
+
+	ar, err := r.client.CreateApprovalRequest(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Error Creating Approval Request", err.Error())
 		return
@@ -167,20 +194,26 @@ func (r *ApprovalRequestResource) ImportState(ctx context.Context, req resource.
 
 func approvalRequestToModel(a *client.ApprovalRequest) ApprovalRequestResourceModel {
 	model := ApprovalRequestResourceModel{
-		ID:            types.StringValue(a.ID),
-		MirrorID:      types.StringValue(a.MirrorID),
-		Justification: types.StringValue(a.Justification),
-		ReviewStatus:  types.StringValue(a.ReviewStatus),
-		CreatedAt:     types.StringValue(a.CreatedAt),
-		UpdatedAt:     types.StringValue(a.UpdatedAt),
+		ID:                types.StringValue(a.ID),
+		MirrorID:          types.StringValue(a.MirrorConfigID),
+		ProviderNamespace: types.StringValue(a.ProviderNamespace),
+		Justification:     types.StringValue(a.Reason),
+		ReviewStatus:      types.StringValue(a.Status),
+		CreatedAt:         types.StringValue(normalizeTimestamp(a.CreatedAt)),
+		UpdatedAt:         types.StringValue(normalizeTimestamp(a.UpdatedAt)),
 	}
-	if a.ReviewerID != nil {
-		model.ReviewerID = types.StringValue(*a.ReviewerID)
+	if a.ProviderName != nil {
+		model.ProviderName = types.StringValue(*a.ProviderName)
+	} else {
+		model.ProviderName = types.StringNull()
+	}
+	if a.ReviewedBy != nil {
+		model.ReviewerID = types.StringValue(*a.ReviewedBy)
 	} else {
 		model.ReviewerID = types.StringNull()
 	}
-	if a.ReviewNote != nil {
-		model.ReviewNote = types.StringValue(*a.ReviewNote)
+	if a.ReviewNotes != nil {
+		model.ReviewNote = types.StringValue(*a.ReviewNotes)
 	} else {
 		model.ReviewNote = types.StringNull()
 	}
