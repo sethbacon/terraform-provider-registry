@@ -199,11 +199,11 @@ make docs
 
 ## Contributing
 
-1. Fork the repository and create a feature branch from `main`.
-2. Make your changes — add tests for new behaviour.
-3. Run `make test` and `make testacc` and ensure all tests pass.
-4. Run `make lint` and fix any reported issues.
-5. Open a pull request against `main`.
+This project uses a `main` / `development` two-branch model. All changes go through
+`development` first; only release PRs merge to `main`.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow: branching conventions,
+local quality gate, commit style, PR checklist, and the release process.
 
 ## License
 

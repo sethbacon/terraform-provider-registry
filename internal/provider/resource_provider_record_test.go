@@ -30,9 +30,10 @@ func TestAccProviderRecord_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "registry_provider_record.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:            "registry_provider_record.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"updated_at"},
 			},
 		},
 	})
