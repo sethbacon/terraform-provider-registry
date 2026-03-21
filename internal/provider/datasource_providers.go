@@ -16,9 +16,9 @@ type ProvidersDataSource struct {
 }
 
 type ProvidersDataSourceModel struct {
-	Namespace types.String      `tfsdk:"namespace"`
-	Search    types.String      `tfsdk:"search"`
-	Providers []ProviderDSItem  `tfsdk:"providers"`
+	Namespace types.String     `tfsdk:"namespace"`
+	Search    types.String     `tfsdk:"search"`
+	Providers []ProviderDSItem `tfsdk:"providers"`
 }
 
 type ProviderDSItem struct {

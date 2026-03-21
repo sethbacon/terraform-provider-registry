@@ -16,8 +16,8 @@ type ModulesDataSource struct {
 }
 
 type ModulesDataSourceModel struct {
-	Namespace types.String  `tfsdk:"namespace"`
-	Search    types.String  `tfsdk:"search"`
+	Namespace types.String   `tfsdk:"namespace"`
+	Search    types.String   `tfsdk:"search"`
 	Modules   []ModuleDSItem `tfsdk:"modules"`
 }
 
