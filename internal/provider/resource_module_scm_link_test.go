@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 func TestAccModuleSCMLink_basic(t *testing.T) {
@@ -29,9 +30,17 @@ func TestAccModuleSCMLink_basic(t *testing.T) {
 				),
 			},
 			{
-				ResourceName:      "registry_module_scm_link.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+				ResourceName:                         "registry_module_scm_link.test",
+				ImportState:                          true,
+				ImportStateVerify:                    true,
+				ImportStateVerifyIdentifierAttribute: "module_id",
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["registry_module_scm_link.test"]
+					if !ok {
+						return "", fmt.Errorf("not found: registry_module_scm_link.test")
+					}
+					return rs.Primary.Attributes["module_id"], nil
+				},
 			},
 		},
 	})

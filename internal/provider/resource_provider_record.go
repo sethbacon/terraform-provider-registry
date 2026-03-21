@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	"github.com/terraform-registry/terraform-provider-registry/internal/client"
 )
 
@@ -171,6 +172,12 @@ func (r *ProviderRecordResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 
+	var state ProviderRecordResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	updateReq := client.UpdateProviderRecordRequest{}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
@@ -181,7 +188,7 @@ func (r *ProviderRecordResource) Update(ctx context.Context, req resource.Update
 		updateReq.Source = &v
 	}
 
-	p, err := r.client.UpdateProviderRecord(ctx, plan.Namespace.ValueString(), plan.Type.ValueString(), updateReq)
+	p, err := r.client.UpdateProviderRecord(ctx, state.ID.ValueString(), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Error Updating Provider Record", err.Error())
 		return

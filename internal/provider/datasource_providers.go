@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
 	"github.com/terraform-registry/terraform-provider-registry/internal/client"
 )
 
@@ -16,9 +17,9 @@ type ProvidersDataSource struct {
 }
 
 type ProvidersDataSourceModel struct {
-	Namespace types.String      `tfsdk:"namespace"`
-	Search    types.String      `tfsdk:"search"`
-	Providers []ProviderDSItem  `tfsdk:"providers"`
+	Namespace types.String     `tfsdk:"namespace"`
+	Search    types.String     `tfsdk:"search"`
+	Providers []ProviderDSItem `tfsdk:"providers"`
 }
 
 type ProviderDSItem struct {
