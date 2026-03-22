@@ -11,6 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.1] - 2026-03-21
+
+### Fixed
+
+- Replace em dash in `docs/index.md` description frontmatter so the provider description renders correctly on registry.terraform.io
+
+---
+
 ## [0.1.0] - 2026-03-21
 
 Initial release of the Terraform Registry provider.
