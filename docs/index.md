@@ -1,5 +1,6 @@
 ---
 page_title: "Provider: Terraform Registry"
+subcategory: "Cloud Automation"
 description: |-
   The Terraform Registry provider enables management of a self-hosted Terraform Registry backend instance, including users, organizations, modules, providers, mirrors, SCM integrations, and more.
 ---

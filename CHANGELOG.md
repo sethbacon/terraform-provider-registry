@@ -13,9 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.1] - 2026-03-21
 
-### Fixed
+### Changed
 
-- Replace em dash in `docs/index.md` description frontmatter so the provider description renders correctly on registry.terraform.io
+- Add `subcategory` frontmatter to provider docs index for registry.terraform.io categorisation
 
 ---
 
