@@ -153,13 +153,25 @@ func (r *TerraformMirrorResource) Create(ctx context.Context, req resource.Creat
 	}
 
 	createReq := client.CreateTerraformMirrorRequest{
-		Name:              plan.Name.ValueString(),
-		Tool:              plan.Tool.ValueString(),
-		Enabled:           plan.Enabled.ValueBool(),
-		UpstreamURL:       plan.UpstreamURL.ValueString(),
-		GPGVerify:         plan.GPGVerify.ValueBool(),
-		StableOnly:        plan.StableOnly.ValueBool(),
-		SyncIntervalHours: int(plan.SyncIntervalHours.ValueInt64()),
+		Name:        plan.Name.ValueString(),
+		Tool:        plan.Tool.ValueString(),
+		UpstreamURL: plan.UpstreamURL.ValueString(),
+	}
+	if !plan.Enabled.IsNull() && !plan.Enabled.IsUnknown() {
+		v := plan.Enabled.ValueBool()
+		createReq.Enabled = &v
+	}
+	if !plan.GPGVerify.IsNull() && !plan.GPGVerify.IsUnknown() {
+		v := plan.GPGVerify.ValueBool()
+		createReq.GPGVerify = &v
+	}
+	if !plan.StableOnly.IsNull() && !plan.StableOnly.IsUnknown() {
+		v := plan.StableOnly.ValueBool()
+		createReq.StableOnly = &v
+	}
+	if !plan.SyncIntervalHours.IsNull() && !plan.SyncIntervalHours.IsUnknown() {
+		v := int(plan.SyncIntervalHours.ValueInt64())
+		createReq.SyncIntervalHours = &v
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
@@ -212,14 +224,29 @@ func (r *TerraformMirrorResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
+	name := plan.Name.ValueString()
+	tool := plan.Tool.ValueString()
+	upstream := plan.UpstreamURL.ValueString()
 	updateReq := client.UpdateTerraformMirrorRequest{
-		Name:              plan.Name.ValueString(),
-		Tool:              plan.Tool.ValueString(),
-		Enabled:           plan.Enabled.ValueBool(),
-		UpstreamURL:       plan.UpstreamURL.ValueString(),
-		GPGVerify:         plan.GPGVerify.ValueBool(),
-		StableOnly:        plan.StableOnly.ValueBool(),
-		SyncIntervalHours: int(plan.SyncIntervalHours.ValueInt64()),
+		Name:        &name,
+		Tool:        &tool,
+		UpstreamURL: &upstream,
+	}
+	if !plan.Enabled.IsNull() && !plan.Enabled.IsUnknown() {
+		v := plan.Enabled.ValueBool()
+		updateReq.Enabled = &v
+	}
+	if !plan.GPGVerify.IsNull() && !plan.GPGVerify.IsUnknown() {
+		v := plan.GPGVerify.ValueBool()
+		updateReq.GPGVerify = &v
+	}
+	if !plan.StableOnly.IsNull() && !plan.StableOnly.IsUnknown() {
+		v := plan.StableOnly.ValueBool()
+		updateReq.StableOnly = &v
+	}
+	if !plan.SyncIntervalHours.IsNull() && !plan.SyncIntervalHours.IsUnknown() {
+		v := int(plan.SyncIntervalHours.ValueInt64())
+		updateReq.SyncIntervalHours = &v
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()

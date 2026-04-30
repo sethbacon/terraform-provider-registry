@@ -255,6 +255,11 @@ type Mirror struct {
 }
 
 // CreateMirrorRequest is the payload for creating a mirror.
+//
+// Optional scalar fields use pointers so the wire payload omits them entirely
+// when the caller has nothing to set, matching the backend's
+// CreateMirrorConfigRequest semantics in
+// backend/internal/db/models/mirror.go.
 type CreateMirrorRequest struct {
 	Name                string   `json:"name"`
 	Description         *string  `json:"description,omitempty"`
@@ -264,22 +269,28 @@ type CreateMirrorRequest struct {
 	ProviderFilter      []string `json:"provider_filter,omitempty"`
 	VersionFilter       *string  `json:"version_filter,omitempty"`
 	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             bool     `json:"enabled"`
-	SyncIntervalHours   int      `json:"sync_interval_hours"`
+	Enabled             *bool    `json:"enabled,omitempty"`
+	SyncIntervalHours   *int     `json:"sync_interval_hours,omitempty"`
 }
 
 // UpdateMirrorRequest is the payload for updating a mirror.
+//
+// All fields are pointers; only fields the caller explicitly populates are
+// sent on the wire. This matches the backend's UpdateMirrorConfigRequest,
+// where omitted fields leave the existing value unchanged. Sending plain
+// bool/int zero values would silently disable the mirror or reset its sync
+// interval to zero.
 type UpdateMirrorRequest struct {
-	Name                string   `json:"name"`
+	Name                *string  `json:"name,omitempty"`
 	Description         *string  `json:"description,omitempty"`
-	UpstreamRegistryURL string   `json:"upstream_registry_url"`
+	UpstreamRegistryURL *string  `json:"upstream_registry_url,omitempty"`
 	OrganizationID      *string  `json:"organization_id,omitempty"`
 	NamespaceFilter     []string `json:"namespace_filter,omitempty"`
 	ProviderFilter      []string `json:"provider_filter,omitempty"`
 	VersionFilter       *string  `json:"version_filter,omitempty"`
 	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             bool     `json:"enabled"`
-	SyncIntervalHours   int      `json:"sync_interval_hours"`
+	Enabled             *bool    `json:"enabled,omitempty"`
+	SyncIntervalHours   *int     `json:"sync_interval_hours,omitempty"`
 }
 
 // TerraformMirror represents a Terraform binary mirror configuration.
@@ -303,31 +314,40 @@ type TerraformMirror struct {
 }
 
 // CreateTerraformMirrorRequest is the payload for creating a Terraform mirror.
+//
+// Optional scalars use pointers so the wire payload omits them when the caller
+// has nothing to set; the backend then applies defaults. See
+// backend/internal/db/models/terraform_mirror.go.
 type CreateTerraformMirrorRequest struct {
 	Name              string   `json:"name"`
 	Description       *string  `json:"description,omitempty"`
 	Tool              string   `json:"tool"`
-	Enabled           bool     `json:"enabled"`
+	Enabled           *bool    `json:"enabled,omitempty"`
 	UpstreamURL       string   `json:"upstream_url"`
 	PlatformFilter    []string `json:"platform_filter,omitempty"`
 	VersionFilter     *string  `json:"version_filter,omitempty"`
-	GPGVerify         bool     `json:"gpg_verify"`
-	StableOnly        bool     `json:"stable_only"`
-	SyncIntervalHours int      `json:"sync_interval_hours"`
+	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
+	StableOnly        *bool    `json:"stable_only,omitempty"`
+	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
 }
 
 // UpdateTerraformMirrorRequest is the payload for updating a Terraform mirror.
+//
+// All fields are pointers; omitted fields leave the existing value unchanged
+// to match backend UpdateTerraformMirrorConfigRequest semantics. Sending plain
+// bool/int zero values would silently disable the mirror or skip GPG
+// verification.
 type UpdateTerraformMirrorRequest struct {
-	Name              string   `json:"name"`
+	Name              *string  `json:"name,omitempty"`
 	Description       *string  `json:"description,omitempty"`
-	Tool              string   `json:"tool"`
-	Enabled           bool     `json:"enabled"`
-	UpstreamURL       string   `json:"upstream_url"`
+	Tool              *string  `json:"tool,omitempty"`
+	Enabled           *bool    `json:"enabled,omitempty"`
+	UpstreamURL       *string  `json:"upstream_url,omitempty"`
 	PlatformFilter    []string `json:"platform_filter,omitempty"`
 	VersionFilter     *string  `json:"version_filter,omitempty"`
-	GPGVerify         bool     `json:"gpg_verify"`
-	StableOnly        bool     `json:"stable_only"`
-	SyncIntervalHours int      `json:"sync_interval_hours"`
+	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
+	StableOnly        *bool    `json:"stable_only,omitempty"`
+	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
 }
 
 // StorageConfig represents a storage backend configuration.
