@@ -126,7 +126,7 @@ func (r *StorageConfigResource) Create(ctx context.Context, req resource.CreateR
 			resp.Diagnostics.AddError("Error Activating Storage Config", err.Error())
 			return
 		}
-		sc.Active = true
+		sc.IsActive = true
 	}
 
 	model := storageConfigToModel(ctx, sc, configMap)
@@ -181,12 +181,12 @@ func (r *StorageConfigResource) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
-	if plan.Activate.ValueBool() && !sc.Active {
+	if plan.Activate.ValueBool() && !sc.IsActive {
 		if err := r.client.ActivateStorageConfig(ctx, sc.ID); err != nil {
 			resp.Diagnostics.AddError("Error Activating Storage Config", err.Error())
 			return
 		}
-		sc.Active = true
+		sc.IsActive = true
 	}
 
 	model := storageConfigToModel(ctx, sc, configMap)
@@ -315,7 +315,7 @@ func storageConfigToModel(ctx context.Context, sc *client.StorageConfig, preserv
 		ID:        types.StringValue(sc.ID),
 		Backend:   types.StringValue(sc.BackendType),
 		Config:    cfgValue,
-		Active:    types.BoolValue(sc.Active),
+		Active:    types.BoolValue(sc.IsActive),
 		CreatedAt: types.StringValue(normalizeTimestamp(sc.CreatedAt)),
 		UpdatedAt: types.StringValue(normalizeTimestamp(sc.UpdatedAt)),
 	}
