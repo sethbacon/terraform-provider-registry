@@ -5,6 +5,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -20,15 +22,18 @@ type SCMProviderResource struct {
 }
 
 type SCMProviderResourceModel struct {
-	ID           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Type         types.String `tfsdk:"type"`
-	BaseURL      types.String `tfsdk:"base_url"`
-	ClientID     types.String `tfsdk:"client_id"`
-	ClientSecret types.String `tfsdk:"client_secret"`
-	OAuthStatus  types.String `tfsdk:"oauth_status"`
-	CreatedAt    types.String `tfsdk:"created_at"`
-	UpdatedAt    types.String `tfsdk:"updated_at"`
+	ID             types.String `tfsdk:"id"`
+	OrganizationID types.String `tfsdk:"organization_id"`
+	Name           types.String `tfsdk:"name"`
+	Type           types.String `tfsdk:"type"`
+	BaseURL        types.String `tfsdk:"base_url"`
+	TenantID       types.String `tfsdk:"tenant_id"`
+	ClientID       types.String `tfsdk:"client_id"`
+	ClientSecret   types.String `tfsdk:"client_secret"`
+	WebhookSecret  types.String `tfsdk:"webhook_secret"`
+	IsActive       types.Bool   `tfsdk:"is_active"`
+	CreatedAt      types.String `tfsdk:"created_at"`
+	UpdatedAt      types.String `tfsdk:"updated_at"`
 }
 
 func NewSCMProviderResource() resource.Resource {
@@ -50,6 +55,14 @@ func (r *SCMProviderResource) Schema(_ context.Context, _ resource.SchemaRequest
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"organization_id": schema.StringAttribute{
+				Description: "UUID of the organization this SCM integration is scoped to. Omit for a global integration.",
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"name": schema.StringAttribute{
 				Description: "Display name for this SCM integration.",
 				Required:    true,
@@ -62,22 +75,38 @@ func (r *SCMProviderResource) Schema(_ context.Context, _ resource.SchemaRequest
 				},
 			},
 			"base_url": schema.StringAttribute{
-				Description: "Base URL for self-hosted SCM instances (e.g., 'https://github.mycompany.com').",
+				Description: "Base URL for self-hosted SCM instances (e.g., 'https://github.mycompany.com'). Required for Bitbucket Data Center.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"tenant_id": schema.StringAttribute{
+				Description: "Tenant ID for Azure DevOps integrations.",
 				Optional:    true,
 				Computed:    true,
 			},
 			"client_id": schema.StringAttribute{
 				Description: "OAuth application client ID. Required for OAuth-based providers (github, gitlab, azure, bitbucket cloud). Not returned after creation.",
 				Optional:    true,
+				Computed:    true,
 			},
 			"client_secret": schema.StringAttribute{
 				Description: "OAuth application client secret. Required for OAuth-based providers. Not returned after creation.",
 				Optional:    true,
 				Sensitive:   true,
 			},
-			"oauth_status": schema.StringAttribute{
-				Description: "Current OAuth token status.",
+			"webhook_secret": schema.StringAttribute{
+				Description: "Shared secret used to validate incoming webhook payloads. Not returned after creation.",
+				Optional:    true,
+				Sensitive:   true,
+			},
+			"is_active": schema.BoolAttribute{
+				Description: "Whether the SCM integration is enabled. Defaults to true.",
+				Optional:    true,
 				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"created_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp when the SCM provider was created.",
@@ -117,15 +146,26 @@ func (r *SCMProviderResource) Create(ctx context.Context, req resource.CreateReq
 		Name:         plan.Name.ValueString(),
 		ProviderType: plan.Type.ValueString(),
 	}
+	if !plan.OrganizationID.IsNull() && !plan.OrganizationID.IsUnknown() {
+		v := plan.OrganizationID.ValueString()
+		createReq.OrganizationID = &v
+	}
 	if !plan.BaseURL.IsNull() && !plan.BaseURL.IsUnknown() {
 		v := plan.BaseURL.ValueString()
 		createReq.BaseURL = &v
+	}
+	if !plan.TenantID.IsNull() && !plan.TenantID.IsUnknown() {
+		v := plan.TenantID.ValueString()
+		createReq.TenantID = &v
 	}
 	if !plan.ClientID.IsNull() && !plan.ClientID.IsUnknown() {
 		createReq.ClientID = plan.ClientID.ValueString()
 	}
 	if !plan.ClientSecret.IsNull() && !plan.ClientSecret.IsUnknown() {
 		createReq.ClientSecret = plan.ClientSecret.ValueString()
+	}
+	if !plan.WebhookSecret.IsNull() && !plan.WebhookSecret.IsUnknown() {
+		createReq.WebhookSecret = plan.WebhookSecret.ValueString()
 	}
 
 	scm, err := r.client.CreateSCMProvider(ctx, createReq)
@@ -135,9 +175,10 @@ func (r *SCMProviderResource) Create(ctx context.Context, req resource.CreateReq
 	}
 
 	model := scmProviderToModel(scm)
-	// Preserve write-only credentials from plan — not returned by API
-	model.ClientID = plan.ClientID
+	// Preserve write-only credentials from plan — backend never returns the
+	// secret values after creation.
 	model.ClientSecret = plan.ClientSecret
+	model.WebhookSecret = plan.WebhookSecret
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -159,9 +200,9 @@ func (r *SCMProviderResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 
 	model := scmProviderToModel(scm)
-	// Preserve write-only credentials from state — not returned by API
-	model.ClientID = state.ClientID
+	// Preserve write-only secrets from state — not returned by API.
 	model.ClientSecret = state.ClientSecret
+	model.WebhookSecret = state.WebhookSecret
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -174,12 +215,33 @@ func (r *SCMProviderResource) Update(ctx context.Context, req resource.UpdateReq
 		return
 	}
 
+	name := plan.Name.ValueString()
 	updateReq := client.UpdateSCMProviderRequest{
-		Name: plan.Name.ValueString(),
+		Name: &name,
 	}
 	if !plan.BaseURL.IsNull() && !plan.BaseURL.IsUnknown() {
 		v := plan.BaseURL.ValueString()
 		updateReq.BaseURL = &v
+	}
+	if !plan.TenantID.IsNull() && !plan.TenantID.IsUnknown() {
+		v := plan.TenantID.ValueString()
+		updateReq.TenantID = &v
+	}
+	if !plan.ClientID.IsNull() && !plan.ClientID.IsUnknown() {
+		v := plan.ClientID.ValueString()
+		updateReq.ClientID = &v
+	}
+	if !plan.ClientSecret.IsNull() && !plan.ClientSecret.IsUnknown() {
+		v := plan.ClientSecret.ValueString()
+		updateReq.ClientSecret = &v
+	}
+	if !plan.WebhookSecret.IsNull() && !plan.WebhookSecret.IsUnknown() {
+		v := plan.WebhookSecret.ValueString()
+		updateReq.WebhookSecret = &v
+	}
+	if !plan.IsActive.IsNull() && !plan.IsActive.IsUnknown() {
+		v := plan.IsActive.ValueBool()
+		updateReq.IsActive = &v
 	}
 
 	scm, err := r.client.UpdateSCMProvider(ctx, plan.ID.ValueString(), updateReq)
@@ -189,9 +251,9 @@ func (r *SCMProviderResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 
 	model := scmProviderToModel(scm)
-	// Preserve write-only credentials from plan (or fall back to state)
-	model.ClientID = plan.ClientID
+	// Preserve write-only secrets from plan — not returned by API.
 	model.ClientSecret = plan.ClientSecret
+	model.WebhookSecret = plan.WebhookSecret
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -214,9 +276,9 @@ func (r *SCMProviderResource) ImportState(ctx context.Context, req resource.Impo
 		return
 	}
 	model := scmProviderToModel(scm)
-	// Credentials are not recoverable on import
-	model.ClientID = types.StringNull()
+	// Secrets are never returned by the API and cannot be recovered on import.
 	model.ClientSecret = types.StringNull()
+	model.WebhookSecret = types.StringNull()
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
@@ -225,18 +287,29 @@ func scmProviderToModel(s *client.SCMProvider) SCMProviderResourceModel {
 		ID:        types.StringValue(s.ID),
 		Name:      types.StringValue(s.Name),
 		Type:      types.StringValue(s.ProviderType),
+		IsActive:  types.BoolValue(s.IsActive),
 		CreatedAt: types.StringValue(normalizeTimestamp(s.CreatedAt)),
 		UpdatedAt: types.StringValue(normalizeTimestamp(s.UpdatedAt)),
+	}
+	if s.OrganizationID != nil {
+		model.OrganizationID = types.StringValue(*s.OrganizationID)
+	} else {
+		model.OrganizationID = types.StringNull()
 	}
 	if s.BaseURL != nil {
 		model.BaseURL = types.StringValue(*s.BaseURL)
 	} else {
 		model.BaseURL = types.StringNull()
 	}
-	if s.OAuthStatus != nil {
-		model.OAuthStatus = types.StringValue(*s.OAuthStatus)
+	if s.TenantID != nil {
+		model.TenantID = types.StringValue(*s.TenantID)
 	} else {
-		model.OAuthStatus = types.StringNull()
+		model.TenantID = types.StringNull()
+	}
+	if s.ClientID != "" {
+		model.ClientID = types.StringValue(s.ClientID)
+	} else {
+		model.ClientID = types.StringNull()
 	}
 	return model
 }

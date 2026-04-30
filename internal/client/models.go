@@ -175,31 +175,46 @@ type UpdateProviderRecordRequest struct {
 }
 
 // SCMProvider represents an SCM (source control) integration.
+//
+// Mirrors the backend scm.SCMProvider type. ClientID is exposed on the
+// response (not the secret); WebhookSecret is never returned.
 type SCMProvider struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	ProviderType string  `json:"provider_type"`
-	BaseURL      *string `json:"base_url,omitempty"`
-	OAuthStatus  *string `json:"oauth_status,omitempty"`
-	CreatedAt    string  `json:"created_at"`
-	UpdatedAt    string  `json:"updated_at"`
+	ID             string  `json:"id"`
+	OrganizationID *string `json:"organization_id,omitempty"`
+	Name           string  `json:"name"`
+	ProviderType   string  `json:"provider_type"`
+	BaseURL        *string `json:"base_url,omitempty"`
+	TenantID       *string `json:"tenant_id,omitempty"`
+	ClientID       string  `json:"client_id,omitempty"`
+	IsActive       bool    `json:"is_active"`
+	CreatedAt      string  `json:"created_at"`
+	UpdatedAt      string  `json:"updated_at"`
 }
 
 // CreateSCMProviderRequest is the payload for creating an SCM provider.
 type CreateSCMProviderRequest struct {
-	Name          string  `json:"name"`
-	ProviderType  string  `json:"provider_type"`
-	BaseURL       *string `json:"base_url,omitempty"`
-	ClientID      string  `json:"client_id,omitempty"`
-	ClientSecret  string  `json:"client_secret,omitempty"`
-	WebhookSecret string  `json:"webhook_secret,omitempty"`
-	TenantID      *string `json:"tenant_id,omitempty"`
+	OrganizationID *string `json:"organization_id,omitempty"`
+	Name           string  `json:"name"`
+	ProviderType   string  `json:"provider_type"`
+	BaseURL        *string `json:"base_url,omitempty"`
+	TenantID       *string `json:"tenant_id,omitempty"`
+	ClientID       string  `json:"client_id,omitempty"`
+	ClientSecret   string  `json:"client_secret,omitempty"`
+	WebhookSecret  string  `json:"webhook_secret,omitempty"`
 }
 
 // UpdateSCMProviderRequest is the payload for updating an SCM provider.
+//
+// All fields are pointers; omitted fields leave the existing value
+// unchanged on the backend.
 type UpdateSCMProviderRequest struct {
-	Name    string  `json:"name"`
-	BaseURL *string `json:"base_url,omitempty"`
+	Name          *string `json:"name,omitempty"`
+	BaseURL       *string `json:"base_url,omitempty"`
+	TenantID      *string `json:"tenant_id,omitempty"`
+	ClientID      *string `json:"client_id,omitempty"`
+	ClientSecret  *string `json:"client_secret,omitempty"`
+	WebhookSecret *string `json:"webhook_secret,omitempty"`
+	IsActive      *bool   `json:"is_active,omitempty"`
 }
 
 // ModuleSCMLink represents a link between a module and an SCM repository.
