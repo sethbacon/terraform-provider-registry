@@ -569,12 +569,81 @@ type AuditLog struct {
 	CreatedAt      string                 `json:"created_at"`
 }
 
-// Stats represents dashboard statistics.
+// Stats mirrors backend admin.DashboardStats. The shape was reworked
+// alongside the v1 backend release: counters are now grouped under
+// per-resource sub-objects with separate totals for versions, downloads,
+// and (for providers) manual vs. mirrored counts. The previous flat
+// counters (total_modules, total_users, ...) are no longer returned.
 type Stats struct {
-	TotalModules   int `json:"total_modules"`
-	TotalProviders int `json:"total_providers"`
-	TotalUsers     int `json:"total_users"`
-	TotalOrgs      int `json:"total_organizations"`
-	TotalMirrors   int `json:"total_mirrors"`
-	TotalAPIKeys   int `json:"total_api_keys"`
+	Modules         ModuleStats         `json:"modules"`
+	Providers       ProviderStats       `json:"providers"`
+	ProviderMirrors ProviderMirrorStats `json:"provider_mirrors"`
+	BinaryMirrors   BinaryMirrorStats   `json:"binary_mirrors"`
+	Users           int                 `json:"users"`
+	Organizations   int                 `json:"organizations"`
+	SCMProviders    int                 `json:"scm_providers"`
+	Downloads       int64               `json:"downloads"`
+	RecentSyncs     []RecentSyncEntry   `json:"recent_syncs"`
+}
+
+// ModuleStats is the modules sub-object of dashboard stats.
+type ModuleStats struct {
+	Total     int                `json:"total"`
+	Versions  int                `json:"versions"`
+	Downloads int64              `json:"downloads"`
+	BySystem  []ModuleSystemStat `json:"by_system,omitempty"`
+}
+
+// ModuleSystemStat is one entry in the modules.by_system breakdown.
+type ModuleSystemStat struct {
+	System string `json:"system"`
+	Count  int    `json:"count"`
+}
+
+// ProviderStats is the providers sub-object of dashboard stats.
+type ProviderStats struct {
+	Total            int   `json:"total"`
+	TotalVersions    int   `json:"total_versions"`
+	Manual           int   `json:"manual"`
+	ManualVersions   int   `json:"manual_versions"`
+	Mirrored         int   `json:"mirrored"`
+	MirroredVersions int   `json:"mirrored_versions"`
+	Downloads        int64 `json:"downloads"`
+}
+
+// ProviderMirrorStats is the provider_mirrors sub-object.
+type ProviderMirrorStats struct {
+	Total   int `json:"total"`
+	Healthy int `json:"healthy"`
+	Failed  int `json:"failed"`
+}
+
+// BinaryMirrorStats is the binary_mirrors (Terraform/OpenTofu) sub-object.
+type BinaryMirrorStats struct {
+	Total     int              `json:"total"`
+	Healthy   int              `json:"healthy"`
+	Failed    int              `json:"failed"`
+	Syncing   int              `json:"syncing"`
+	Downloads int64            `json:"downloads"`
+	Platforms int              `json:"platforms"`
+	ByTool    []BinaryToolStat `json:"by_tool,omitempty"`
+}
+
+// BinaryToolStat is one entry in binary_mirrors.by_tool.
+type BinaryToolStat struct {
+	Tool  string `json:"tool"`
+	Count int    `json:"count"`
+}
+
+// RecentSyncEntry is one row of the recent_syncs ledger across all mirror
+// types (provider mirrors + binary mirrors).
+type RecentSyncEntry struct {
+	MirrorName      string `json:"mirror_name"`
+	MirrorType      string `json:"mirror_type"` // "binary" | "provider"
+	Status          string `json:"status"`
+	TriggeredBy     string `json:"triggered_by"`
+	StartedAt       string `json:"started_at"`
+	CompletedAt     string `json:"completed_at,omitempty"`
+	VersionsSynced  int    `json:"versions_synced"`
+	PlatformsSynced int    `json:"platforms_synced"`
 }

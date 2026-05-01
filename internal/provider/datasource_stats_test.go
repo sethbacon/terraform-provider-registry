@@ -13,10 +13,13 @@ func TestAccDataStats_basic(t *testing.T) {
 			{
 				Config: testAccProviderConfig() + `data "registry_stats" "dashboard" {}`,
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "total_modules"),
-					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "total_providers"),
-					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "total_organizations"),
-					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "total_users"),
+					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "users"),
+					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "organizations"),
+					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "scm_providers"),
+					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "modules.total"),
+					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "providers.total"),
+					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "provider_mirrors.total"),
+					resource.TestCheckResourceAttrSet("data.registry_stats.dashboard", "binary_mirrors.total"),
 				),
 			},
 		},
