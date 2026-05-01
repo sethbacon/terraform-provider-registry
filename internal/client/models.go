@@ -218,6 +218,12 @@ type UpdateSCMProviderRequest struct {
 }
 
 // ModuleSCMLink represents a link between a module and an SCM repository.
+//
+// JSON field naming on read intentionally differs from the create/update
+// request bodies: the response carries module_path / auto_publish_enabled
+// while the request bodies use repository_path / auto_publish_enabled.
+// See backend/internal/scm/types.go (response) and
+// backend/internal/api/modules/scm_linking.go (request).
 type ModuleSCMLink struct {
 	ID              string `json:"id"`
 	ModuleID        string `json:"module_id"`
@@ -225,18 +231,26 @@ type ModuleSCMLink struct {
 	RepositoryOwner string `json:"repository_owner"`
 	RepositoryName  string `json:"repository_name"`
 	DefaultBranch   string `json:"default_branch"`
+	ModulePath      string `json:"module_path"`
 	TagPattern      string `json:"tag_pattern"`
+	AutoPublish     bool   `json:"auto_publish_enabled"`
 	CreatedAt       string `json:"created_at"`
 	UpdatedAt       string `json:"updated_at"`
 }
 
 // CreateModuleSCMLinkRequest is the payload for creating a module SCM link.
+//
+// Note the request field is repository_path, not module_path; the backend
+// renames it on persist. See LinkSCMRequest in
+// backend/internal/api/modules/scm_linking.go.
 type CreateModuleSCMLinkRequest struct {
 	SCMProviderID   string `json:"provider_id"`
 	RepositoryOwner string `json:"repository_owner"`
 	RepositoryName  string `json:"repository_name"`
 	DefaultBranch   string `json:"default_branch"`
+	RepositoryPath  string `json:"repository_path,omitempty"`
 	TagPattern      string `json:"tag_pattern,omitempty"`
+	AutoPublish     bool   `json:"auto_publish_enabled"`
 }
 
 // UpdateModuleSCMLinkRequest is the payload for updating a module SCM link.
@@ -245,7 +259,9 @@ type UpdateModuleSCMLinkRequest struct {
 	RepositoryOwner string `json:"repository_owner"`
 	RepositoryName  string `json:"repository_name"`
 	DefaultBranch   string `json:"default_branch"`
+	RepositoryPath  string `json:"repository_path,omitempty"`
 	TagPattern      string `json:"tag_pattern,omitempty"`
+	AutoPublish     bool   `json:"auto_publish_enabled"`
 }
 
 // Mirror represents a provider mirror configuration.
