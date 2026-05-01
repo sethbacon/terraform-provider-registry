@@ -226,11 +226,11 @@ func (d *StatsDataSource) Read(ctx context.Context, _ datasource.ReadRequest, re
 		Downloads:     types.Int64Value(stats.Downloads),
 	}
 
-	model.Modules = buildModulesObject(ctx, &stats.Modules, &resp.Diagnostics)
-	model.Providers = buildProvidersObject(ctx, &stats.Providers, &resp.Diagnostics)
-	model.ProviderMirrors = buildProviderMirrorsObject(ctx, &stats.ProviderMirrors, &resp.Diagnostics)
-	model.BinaryMirrors = buildBinaryMirrorsObject(ctx, &stats.BinaryMirrors, &resp.Diagnostics)
-	model.RecentSyncs = buildRecentSyncsList(ctx, stats.RecentSyncs, &resp.Diagnostics)
+	model.Modules = buildModulesObject(&stats.Modules, &resp.Diagnostics)
+	model.Providers = buildProvidersObject(&stats.Providers, &resp.Diagnostics)
+	model.ProviderMirrors = buildProviderMirrorsObject(&stats.ProviderMirrors, &resp.Diagnostics)
+	model.BinaryMirrors = buildBinaryMirrorsObject(&stats.BinaryMirrors, &resp.Diagnostics)
+	model.RecentSyncs = buildRecentSyncsList(stats.RecentSyncs, &resp.Diagnostics)
 
 	if resp.Diagnostics.HasError() {
 		return
@@ -239,7 +239,7 @@ func (d *StatsDataSource) Read(ctx context.Context, _ datasource.ReadRequest, re
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }
 
-func buildModulesObject(ctx context.Context, m *client.ModuleStats, diags *diag.Diagnostics) types.Object {
+func buildModulesObject(m *client.ModuleStats, diags *diag.Diagnostics) types.Object {
 	bySystemList := types.ListNull(types.ObjectType{AttrTypes: moduleSystemAttrTypes()})
 	if len(m.BySystem) > 0 {
 		elems := make([]attr.Value, 0, len(m.BySystem))
@@ -265,7 +265,7 @@ func buildModulesObject(ctx context.Context, m *client.ModuleStats, diags *diag.
 	return obj
 }
 
-func buildProvidersObject(ctx context.Context, p *client.ProviderStats, diags *diag.Diagnostics) types.Object {
+func buildProvidersObject(p *client.ProviderStats, diags *diag.Diagnostics) types.Object {
 	obj, d := types.ObjectValue(providerStatsAttrTypes(), map[string]attr.Value{
 		"total":             types.Int64Value(int64(p.Total)),
 		"total_versions":    types.Int64Value(int64(p.TotalVersions)),
@@ -279,7 +279,7 @@ func buildProvidersObject(ctx context.Context, p *client.ProviderStats, diags *d
 	return obj
 }
 
-func buildProviderMirrorsObject(ctx context.Context, p *client.ProviderMirrorStats, diags *diag.Diagnostics) types.Object {
+func buildProviderMirrorsObject(p *client.ProviderMirrorStats, diags *diag.Diagnostics) types.Object {
 	obj, d := types.ObjectValue(providerMirrorStatsAttrTypes(), map[string]attr.Value{
 		"total":   types.Int64Value(int64(p.Total)),
 		"healthy": types.Int64Value(int64(p.Healthy)),
@@ -289,7 +289,7 @@ func buildProviderMirrorsObject(ctx context.Context, p *client.ProviderMirrorSta
 	return obj
 }
 
-func buildBinaryMirrorsObject(ctx context.Context, b *client.BinaryMirrorStats, diags *diag.Diagnostics) types.Object {
+func buildBinaryMirrorsObject(b *client.BinaryMirrorStats, diags *diag.Diagnostics) types.Object {
 	byToolList := types.ListNull(types.ObjectType{AttrTypes: binaryToolAttrTypes()})
 	if len(b.ByTool) > 0 {
 		elems := make([]attr.Value, 0, len(b.ByTool))
@@ -318,7 +318,7 @@ func buildBinaryMirrorsObject(ctx context.Context, b *client.BinaryMirrorStats, 
 	return obj
 }
 
-func buildRecentSyncsList(ctx context.Context, entries []client.RecentSyncEntry, diags *diag.Diagnostics) types.List {
+func buildRecentSyncsList(entries []client.RecentSyncEntry, diags *diag.Diagnostics) types.List {
 	if len(entries) == 0 {
 		return types.ListNull(types.ObjectType{AttrTypes: recentSyncAttrTypes()})
 	}
