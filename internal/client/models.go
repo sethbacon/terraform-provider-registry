@@ -620,13 +620,13 @@ type ProviderMirrorStats struct {
 
 // BinaryMirrorStats is the binary_mirrors (Terraform/OpenTofu) sub-object.
 type BinaryMirrorStats struct {
-	Total     int                `json:"total"`
-	Healthy   int                `json:"healthy"`
-	Failed    int                `json:"failed"`
-	Syncing   int                `json:"syncing"`
-	Downloads int64              `json:"downloads"`
-	Platforms int                `json:"platforms"`
-	ByTool    []BinaryToolStat   `json:"by_tool,omitempty"`
+	Total     int              `json:"total"`
+	Healthy   int              `json:"healthy"`
+	Failed    int              `json:"failed"`
+	Syncing   int              `json:"syncing"`
+	Downloads int64            `json:"downloads"`
+	Platforms int              `json:"platforms"`
+	ByTool    []BinaryToolStat `json:"by_tool,omitempty"`
 }
 
 // BinaryToolStat is one entry in binary_mirrors.by_tool.
