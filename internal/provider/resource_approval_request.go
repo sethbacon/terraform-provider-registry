@@ -22,12 +22,20 @@ type ApprovalRequestResource struct {
 type ApprovalRequestResourceModel struct {
 	ID                types.String `tfsdk:"id"`
 	MirrorID          types.String `tfsdk:"mirror_id"`
+	OrganizationID    types.String `tfsdk:"organization_id"`
 	ProviderNamespace types.String `tfsdk:"provider_namespace"`
 	ProviderName      types.String `tfsdk:"provider_name"`
 	Justification     types.String `tfsdk:"justification"`
 	ReviewStatus      types.String `tfsdk:"review_status"`
+	RequestedBy       types.String `tfsdk:"requested_by"`
+	RequestedByName   types.String `tfsdk:"requested_by_name"`
 	ReviewerID        types.String `tfsdk:"reviewer_id"`
+	ReviewerName      types.String `tfsdk:"reviewer_name"`
+	ReviewedAt        types.String `tfsdk:"reviewed_at"`
 	ReviewNote        types.String `tfsdk:"review_note"`
+	ExpiresAt         types.String `tfsdk:"expires_at"`
+	AutoApproved      types.Bool   `tfsdk:"auto_approved"`
+	MirrorName        types.String `tfsdk:"mirror_name"`
 	CreatedAt         types.String `tfsdk:"created_at"`
 	UpdatedAt         types.String `tfsdk:"updated_at"`
 }
@@ -81,16 +89,48 @@ func (r *ApprovalRequestResource) Schema(_ context.Context, _ resource.SchemaReq
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
+			"organization_id": schema.StringAttribute{
+				Description: "UUID of the organization this request was scoped to (null for global).",
+				Computed:    true,
+			},
 			"review_status": schema.StringAttribute{
 				Description: "Current review status: pending, approved, or rejected.",
+				Computed:    true,
+			},
+			"requested_by": schema.StringAttribute{
+				Description: "UUID of the user who created the request.",
+				Computed:    true,
+			},
+			"requested_by_name": schema.StringAttribute{
+				Description: "Display name of the requesting user.",
 				Computed:    true,
 			},
 			"reviewer_id": schema.StringAttribute{
 				Description: "UUID of the reviewing user.",
 				Computed:    true,
 			},
+			"reviewer_name": schema.StringAttribute{
+				Description: "Display name of the reviewing user.",
+				Computed:    true,
+			},
+			"reviewed_at": schema.StringAttribute{
+				Description: "ISO 8601 timestamp when the request was reviewed.",
+				Computed:    true,
+			},
 			"review_note": schema.StringAttribute{
 				Description: "Note from the reviewer.",
+				Computed:    true,
+			},
+			"expires_at": schema.StringAttribute{
+				Description: "ISO 8601 timestamp when an approved request expires; null if it does not expire.",
+				Computed:    true,
+			},
+			"auto_approved": schema.BoolAttribute{
+				Description: "True if the request was auto-approved by a matching policy.",
+				Computed:    true,
+			},
+			"mirror_name": schema.StringAttribute{
+				Description: "Name of the mirror this approval request applies to.",
 				Computed:    true,
 			},
 			"created_at": schema.StringAttribute{
@@ -200,6 +240,7 @@ func approvalRequestToModel(a *client.ApprovalRequest) ApprovalRequestResourceMo
 		ProviderNamespace: types.StringValue(a.ProviderNamespace),
 		Justification:     types.StringValue(a.Reason),
 		ReviewStatus:      types.StringValue(a.Status),
+		AutoApproved:      types.BoolValue(a.AutoApproved),
 		CreatedAt:         types.StringValue(normalizeTimestamp(a.CreatedAt)),
 		UpdatedAt:         types.StringValue(normalizeTimestamp(a.UpdatedAt)),
 	}
@@ -208,15 +249,50 @@ func approvalRequestToModel(a *client.ApprovalRequest) ApprovalRequestResourceMo
 	} else {
 		model.ProviderName = types.StringNull()
 	}
+	if a.OrganizationID != nil {
+		model.OrganizationID = types.StringValue(*a.OrganizationID)
+	} else {
+		model.OrganizationID = types.StringNull()
+	}
+	if a.RequestedBy != nil {
+		model.RequestedBy = types.StringValue(*a.RequestedBy)
+	} else {
+		model.RequestedBy = types.StringNull()
+	}
+	if a.RequestedByName != "" {
+		model.RequestedByName = types.StringValue(a.RequestedByName)
+	} else {
+		model.RequestedByName = types.StringNull()
+	}
 	if a.ReviewedBy != nil {
 		model.ReviewerID = types.StringValue(*a.ReviewedBy)
 	} else {
 		model.ReviewerID = types.StringNull()
 	}
+	if a.ReviewedByName != "" {
+		model.ReviewerName = types.StringValue(a.ReviewedByName)
+	} else {
+		model.ReviewerName = types.StringNull()
+	}
+	if a.ReviewedAt != nil {
+		model.ReviewedAt = types.StringValue(normalizeTimestamp(*a.ReviewedAt))
+	} else {
+		model.ReviewedAt = types.StringNull()
+	}
 	if a.ReviewNotes != nil {
 		model.ReviewNote = types.StringValue(*a.ReviewNotes)
 	} else {
 		model.ReviewNote = types.StringNull()
+	}
+	if a.ExpiresAt != nil {
+		model.ExpiresAt = types.StringValue(normalizeTimestamp(*a.ExpiresAt))
+	} else {
+		model.ExpiresAt = types.StringNull()
+	}
+	if a.MirrorName != "" {
+		model.MirrorName = types.StringValue(a.MirrorName)
+	} else {
+		model.MirrorName = types.StringNull()
 	}
 	return model
 }

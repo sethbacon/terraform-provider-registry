@@ -517,18 +517,33 @@ type UpdatePolicyRequest struct {
 }
 
 // ApprovalRequest represents a mirror approval request.
+//
+// Mirrors backend's MirrorApprovalRequest in
+// backend/internal/db/models/mirror_approval.go. The OrganizationID,
+// RequestedBy, ReviewedAt, ExpiresAt, RequestedByName, ReviewedByName,
+// and MirrorName fields are populated by the backend on read; none of
+// them are accepted on the create payload.
 type ApprovalRequest struct {
 	ID                string  `json:"id"`
 	MirrorConfigID    string  `json:"mirror_config_id"`
+	OrganizationID    *string `json:"organization_id,omitempty"`
+	RequestedBy       *string `json:"requested_by,omitempty"`
 	ProviderNamespace string  `json:"provider_namespace"`
 	ProviderName      *string `json:"provider_name,omitempty"`
 	Reason            string  `json:"reason,omitempty"`
 	Status            string  `json:"status"`
 	ReviewedBy        *string `json:"reviewed_by,omitempty"`
+	ReviewedAt        *string `json:"reviewed_at,omitempty"`
 	ReviewNotes       *string `json:"review_notes,omitempty"`
 	AutoApproved      bool    `json:"auto_approved"`
 	CreatedAt         string  `json:"created_at"`
 	UpdatedAt         string  `json:"updated_at"`
+	ExpiresAt         *string `json:"expires_at,omitempty"`
+
+	// Joined fields (populated server-side via LEFT JOIN; never written).
+	RequestedByName string `json:"requested_by_name,omitempty"`
+	ReviewedByName  string `json:"reviewed_by_name,omitempty"`
+	MirrorName      string `json:"mirror_name,omitempty"`
 }
 
 // CreateApprovalRequestRequest is the payload for creating an approval request.
