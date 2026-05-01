@@ -334,7 +334,7 @@ type UpdateTerraformMirrorRequest struct {
 type StorageConfig struct {
 	ID          string `json:"id"`
 	BackendType string `json:"backend_type"`
-	Active      bool   `json:"active"`
+	IsActive    bool   `json:"is_active"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 	// Individual backend fields returned by API (credentials redacted)
