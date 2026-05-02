@@ -23,6 +23,8 @@ type OrganizationResourceModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	DisplayName types.String `tfsdk:"display_name"`
+	IdpType     types.String `tfsdk:"idp_type"`
+	IdpName     types.String `tfsdk:"idp_name"`
 	CreatedAt   types.String `tfsdk:"created_at"`
 	UpdatedAt   types.String `tfsdk:"updated_at"`
 }
@@ -53,6 +55,16 @@ func (r *OrganizationResource) Schema(_ context.Context, _ resource.SchemaReques
 			"display_name": schema.StringAttribute{
 				Description: "Human-readable display name.",
 				Required:    true,
+			},
+			"idp_type": schema.StringAttribute{
+				Description: "Identity-provider type the organization is bound to: 'oidc', 'saml', 'ldap', or null. When set, only users authenticated via the matching IdP may join the organization.",
+				Optional:    true,
+				Computed:    true,
+			},
+			"idp_name": schema.StringAttribute{
+				Description: "Name of the bound IdP within the chosen `idp_type` (e.g., the SAML IdP name configured in the backend).",
+				Optional:    true,
+				Computed:    true,
 			},
 			"created_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp when the organization was created.",
@@ -88,10 +100,20 @@ func (r *OrganizationResource) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	org, err := r.client.CreateOrganization(ctx, client.CreateOrganizationRequest{
+	createReq := client.CreateOrganizationRequest{
 		Name:        plan.Name.ValueString(),
 		DisplayName: plan.DisplayName.ValueString(),
-	})
+	}
+	if !plan.IdpType.IsNull() && !plan.IdpType.IsUnknown() {
+		v := plan.IdpType.ValueString()
+		createReq.IdpType = &v
+	}
+	if !plan.IdpName.IsNull() && !plan.IdpName.IsUnknown() {
+		v := plan.IdpName.ValueString()
+		createReq.IdpName = &v
+	}
+
+	org, err := r.client.CreateOrganization(ctx, createReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Error Creating Organization", err.Error())
 		return
@@ -127,10 +149,20 @@ func (r *OrganizationResource) Update(ctx context.Context, req resource.UpdateRe
 		return
 	}
 
-	org, err := r.client.UpdateOrganization(ctx, plan.ID.ValueString(), client.UpdateOrganizationRequest{
+	updateReq := client.UpdateOrganizationRequest{
 		Name:        plan.Name.ValueString(),
 		DisplayName: plan.DisplayName.ValueString(),
-	})
+	}
+	if !plan.IdpType.IsNull() && !plan.IdpType.IsUnknown() {
+		v := plan.IdpType.ValueString()
+		updateReq.IdpType = &v
+	}
+	if !plan.IdpName.IsNull() && !plan.IdpName.IsUnknown() {
+		v := plan.IdpName.ValueString()
+		updateReq.IdpName = &v
+	}
+
+	org, err := r.client.UpdateOrganization(ctx, plan.ID.ValueString(), updateReq)
 	if err != nil {
 		resp.Diagnostics.AddError("Error Updating Organization", err.Error())
 		return
@@ -161,11 +193,22 @@ func (r *OrganizationResource) ImportState(ctx context.Context, req resource.Imp
 }
 
 func orgToModel(o *client.Organization) OrganizationResourceModel {
-	return OrganizationResourceModel{
+	model := OrganizationResourceModel{
 		ID:          types.StringValue(o.ID),
 		Name:        types.StringValue(o.Name),
 		DisplayName: types.StringValue(o.DisplayName),
 		CreatedAt:   types.StringValue(o.CreatedAt),
 		UpdatedAt:   types.StringValue(o.UpdatedAt),
 	}
+	if o.IdpType != nil {
+		model.IdpType = types.StringValue(*o.IdpType)
+	} else {
+		model.IdpType = types.StringNull()
+	}
+	if o.IdpName != nil {
+		model.IdpName = types.StringValue(*o.IdpName)
+	} else {
+		model.IdpName = types.StringNull()
+	}
+	return model
 }
