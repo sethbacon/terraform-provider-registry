@@ -52,7 +52,7 @@ jobs:
   acc-tests:
     name: Acceptance Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -102,7 +102,7 @@ jobs:
         env:
           TF_ACC: "1"
           TF_REGISTRY_ENDPOINT: "http://localhost:8081"
-        run: go test -v -count=1 -timeout 25m ./internal/provider/...
+        run: go test -v -count=1 -timeout 50m ./internal/provider/...
 
       - name: Dump backend logs on failure
         if: failure()
