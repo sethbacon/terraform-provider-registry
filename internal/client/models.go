@@ -175,34 +175,55 @@ type UpdateProviderRecordRequest struct {
 }
 
 // SCMProvider represents an SCM (source control) integration.
+//
+// Mirrors the backend scm.SCMProvider type. ClientID is exposed on the
+// response (not the secret); WebhookSecret is never returned.
 type SCMProvider struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	ProviderType string  `json:"provider_type"`
-	BaseURL      *string `json:"base_url,omitempty"`
-	OAuthStatus  *string `json:"oauth_status,omitempty"`
-	CreatedAt    string  `json:"created_at"`
-	UpdatedAt    string  `json:"updated_at"`
+	ID             string  `json:"id"`
+	OrganizationID *string `json:"organization_id,omitempty"`
+	Name           string  `json:"name"`
+	ProviderType   string  `json:"provider_type"`
+	BaseURL        *string `json:"base_url,omitempty"`
+	TenantID       *string `json:"tenant_id,omitempty"`
+	ClientID       string  `json:"client_id,omitempty"`
+	IsActive       bool    `json:"is_active"`
+	CreatedAt      string  `json:"created_at"`
+	UpdatedAt      string  `json:"updated_at"`
 }
 
 // CreateSCMProviderRequest is the payload for creating an SCM provider.
 type CreateSCMProviderRequest struct {
-	Name          string  `json:"name"`
-	ProviderType  string  `json:"provider_type"`
-	BaseURL       *string `json:"base_url,omitempty"`
-	ClientID      string  `json:"client_id,omitempty"`
-	ClientSecret  string  `json:"client_secret,omitempty"`
-	WebhookSecret string  `json:"webhook_secret,omitempty"`
-	TenantID      *string `json:"tenant_id,omitempty"`
+	OrganizationID *string `json:"organization_id,omitempty"`
+	Name           string  `json:"name"`
+	ProviderType   string  `json:"provider_type"`
+	BaseURL        *string `json:"base_url,omitempty"`
+	TenantID       *string `json:"tenant_id,omitempty"`
+	ClientID       string  `json:"client_id,omitempty"`
+	ClientSecret   string  `json:"client_secret,omitempty"`
+	WebhookSecret  string  `json:"webhook_secret,omitempty"`
 }
 
 // UpdateSCMProviderRequest is the payload for updating an SCM provider.
+//
+// All fields are pointers; omitted fields leave the existing value
+// unchanged on the backend.
 type UpdateSCMProviderRequest struct {
-	Name    string  `json:"name"`
-	BaseURL *string `json:"base_url,omitempty"`
+	Name          *string `json:"name,omitempty"`
+	BaseURL       *string `json:"base_url,omitempty"`
+	TenantID      *string `json:"tenant_id,omitempty"`
+	ClientID      *string `json:"client_id,omitempty"`
+	ClientSecret  *string `json:"client_secret,omitempty"`
+	WebhookSecret *string `json:"webhook_secret,omitempty"`
+	IsActive      *bool   `json:"is_active,omitempty"`
 }
 
 // ModuleSCMLink represents a link between a module and an SCM repository.
+//
+// JSON field naming on read intentionally differs from the create/update
+// request bodies: the response carries module_path / auto_publish_enabled
+// while the request bodies use repository_path / auto_publish_enabled.
+// See backend/internal/scm/types.go (response) and
+// backend/internal/api/modules/scm_linking.go (request).
 type ModuleSCMLink struct {
 	ID              string `json:"id"`
 	ModuleID        string `json:"module_id"`
@@ -210,18 +231,26 @@ type ModuleSCMLink struct {
 	RepositoryOwner string `json:"repository_owner"`
 	RepositoryName  string `json:"repository_name"`
 	DefaultBranch   string `json:"default_branch"`
+	ModulePath      string `json:"module_path"`
 	TagPattern      string `json:"tag_pattern"`
+	AutoPublish     bool   `json:"auto_publish_enabled"`
 	CreatedAt       string `json:"created_at"`
 	UpdatedAt       string `json:"updated_at"`
 }
 
 // CreateModuleSCMLinkRequest is the payload for creating a module SCM link.
+//
+// Note the request field is repository_path, not module_path; the backend
+// renames it on persist. See LinkSCMRequest in
+// backend/internal/api/modules/scm_linking.go.
 type CreateModuleSCMLinkRequest struct {
 	SCMProviderID   string `json:"provider_id"`
 	RepositoryOwner string `json:"repository_owner"`
 	RepositoryName  string `json:"repository_name"`
 	DefaultBranch   string `json:"default_branch"`
+	RepositoryPath  string `json:"repository_path,omitempty"`
 	TagPattern      string `json:"tag_pattern,omitempty"`
+	AutoPublish     bool   `json:"auto_publish_enabled"`
 }
 
 // UpdateModuleSCMLinkRequest is the payload for updating a module SCM link.
@@ -230,7 +259,9 @@ type UpdateModuleSCMLinkRequest struct {
 	RepositoryOwner string `json:"repository_owner"`
 	RepositoryName  string `json:"repository_name"`
 	DefaultBranch   string `json:"default_branch"`
+	RepositoryPath  string `json:"repository_path,omitempty"`
 	TagPattern      string `json:"tag_pattern,omitempty"`
+	AutoPublish     bool   `json:"auto_publish_enabled"`
 }
 
 // Mirror represents a provider mirror configuration.
@@ -255,6 +286,11 @@ type Mirror struct {
 }
 
 // CreateMirrorRequest is the payload for creating a mirror.
+//
+// Optional scalar fields use pointers so the wire payload omits them entirely
+// when the caller has nothing to set, matching the backend's
+// CreateMirrorConfigRequest semantics in
+// backend/internal/db/models/mirror.go.
 type CreateMirrorRequest struct {
 	Name                string   `json:"name"`
 	Description         *string  `json:"description,omitempty"`
@@ -264,22 +300,28 @@ type CreateMirrorRequest struct {
 	ProviderFilter      []string `json:"provider_filter,omitempty"`
 	VersionFilter       *string  `json:"version_filter,omitempty"`
 	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             bool     `json:"enabled"`
-	SyncIntervalHours   int      `json:"sync_interval_hours"`
+	Enabled             *bool    `json:"enabled,omitempty"`
+	SyncIntervalHours   *int     `json:"sync_interval_hours,omitempty"`
 }
 
 // UpdateMirrorRequest is the payload for updating a mirror.
+//
+// All fields are pointers; only fields the caller explicitly populates are
+// sent on the wire. This matches the backend's UpdateMirrorConfigRequest,
+// where omitted fields leave the existing value unchanged. Sending plain
+// bool/int zero values would silently disable the mirror or reset its sync
+// interval to zero.
 type UpdateMirrorRequest struct {
-	Name                string   `json:"name"`
+	Name                *string  `json:"name,omitempty"`
 	Description         *string  `json:"description,omitempty"`
-	UpstreamRegistryURL string   `json:"upstream_registry_url"`
+	UpstreamRegistryURL *string  `json:"upstream_registry_url,omitempty"`
 	OrganizationID      *string  `json:"organization_id,omitempty"`
 	NamespaceFilter     []string `json:"namespace_filter,omitempty"`
 	ProviderFilter      []string `json:"provider_filter,omitempty"`
 	VersionFilter       *string  `json:"version_filter,omitempty"`
 	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             bool     `json:"enabled"`
-	SyncIntervalHours   int      `json:"sync_interval_hours"`
+	Enabled             *bool    `json:"enabled,omitempty"`
+	SyncIntervalHours   *int     `json:"sync_interval_hours,omitempty"`
 }
 
 // TerraformMirror represents a Terraform binary mirror configuration.
@@ -303,38 +345,47 @@ type TerraformMirror struct {
 }
 
 // CreateTerraformMirrorRequest is the payload for creating a Terraform mirror.
+//
+// Optional scalars use pointers so the wire payload omits them when the caller
+// has nothing to set; the backend then applies defaults. See
+// backend/internal/db/models/terraform_mirror.go.
 type CreateTerraformMirrorRequest struct {
 	Name              string   `json:"name"`
 	Description       *string  `json:"description,omitempty"`
 	Tool              string   `json:"tool"`
-	Enabled           bool     `json:"enabled"`
+	Enabled           *bool    `json:"enabled,omitempty"`
 	UpstreamURL       string   `json:"upstream_url"`
 	PlatformFilter    []string `json:"platform_filter,omitempty"`
 	VersionFilter     *string  `json:"version_filter,omitempty"`
-	GPGVerify         bool     `json:"gpg_verify"`
-	StableOnly        bool     `json:"stable_only"`
-	SyncIntervalHours int      `json:"sync_interval_hours"`
+	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
+	StableOnly        *bool    `json:"stable_only,omitempty"`
+	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
 }
 
 // UpdateTerraformMirrorRequest is the payload for updating a Terraform mirror.
+//
+// All fields are pointers; omitted fields leave the existing value unchanged
+// to match backend UpdateTerraformMirrorConfigRequest semantics. Sending plain
+// bool/int zero values would silently disable the mirror or skip GPG
+// verification.
 type UpdateTerraformMirrorRequest struct {
-	Name              string   `json:"name"`
+	Name              *string  `json:"name,omitempty"`
 	Description       *string  `json:"description,omitempty"`
-	Tool              string   `json:"tool"`
-	Enabled           bool     `json:"enabled"`
-	UpstreamURL       string   `json:"upstream_url"`
+	Tool              *string  `json:"tool,omitempty"`
+	Enabled           *bool    `json:"enabled,omitempty"`
+	UpstreamURL       *string  `json:"upstream_url,omitempty"`
 	PlatformFilter    []string `json:"platform_filter,omitempty"`
 	VersionFilter     *string  `json:"version_filter,omitempty"`
-	GPGVerify         bool     `json:"gpg_verify"`
-	StableOnly        bool     `json:"stable_only"`
-	SyncIntervalHours int      `json:"sync_interval_hours"`
+	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
+	StableOnly        *bool    `json:"stable_only,omitempty"`
+	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
 }
 
 // StorageConfig represents a storage backend configuration.
 type StorageConfig struct {
 	ID          string `json:"id"`
 	BackendType string `json:"backend_type"`
-	Active      bool   `json:"active"`
+	IsActive    bool   `json:"is_active"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 	// Individual backend fields returned by API (credentials redacted)
@@ -466,18 +517,33 @@ type UpdatePolicyRequest struct {
 }
 
 // ApprovalRequest represents a mirror approval request.
+//
+// Mirrors backend's MirrorApprovalRequest in
+// backend/internal/db/models/mirror_approval.go. The OrganizationID,
+// RequestedBy, ReviewedAt, ExpiresAt, RequestedByName, ReviewedByName,
+// and MirrorName fields are populated by the backend on read; none of
+// them are accepted on the create payload.
 type ApprovalRequest struct {
 	ID                string  `json:"id"`
 	MirrorConfigID    string  `json:"mirror_config_id"`
+	OrganizationID    *string `json:"organization_id,omitempty"`
+	RequestedBy       *string `json:"requested_by,omitempty"`
 	ProviderNamespace string  `json:"provider_namespace"`
 	ProviderName      *string `json:"provider_name,omitempty"`
 	Reason            string  `json:"reason,omitempty"`
 	Status            string  `json:"status"`
 	ReviewedBy        *string `json:"reviewed_by,omitempty"`
+	ReviewedAt        *string `json:"reviewed_at,omitempty"`
 	ReviewNotes       *string `json:"review_notes,omitempty"`
 	AutoApproved      bool    `json:"auto_approved"`
 	CreatedAt         string  `json:"created_at"`
 	UpdatedAt         string  `json:"updated_at"`
+	ExpiresAt         *string `json:"expires_at,omitempty"`
+
+	// Joined fields (populated server-side via LEFT JOIN; never written).
+	RequestedByName string `json:"requested_by_name,omitempty"`
+	ReviewedByName  string `json:"reviewed_by_name,omitempty"`
+	MirrorName      string `json:"mirror_name,omitempty"`
 }
 
 // CreateApprovalRequestRequest is the payload for creating an approval request.
@@ -503,12 +569,81 @@ type AuditLog struct {
 	CreatedAt      string                 `json:"created_at"`
 }
 
-// Stats represents dashboard statistics.
+// Stats mirrors backend admin.DashboardStats. The shape was reworked
+// alongside the v1 backend release: counters are now grouped under
+// per-resource sub-objects with separate totals for versions, downloads,
+// and (for providers) manual vs. mirrored counts. The previous flat
+// counters (total_modules, total_users, ...) are no longer returned.
 type Stats struct {
-	TotalModules   int `json:"total_modules"`
-	TotalProviders int `json:"total_providers"`
-	TotalUsers     int `json:"total_users"`
-	TotalOrgs      int `json:"total_organizations"`
-	TotalMirrors   int `json:"total_mirrors"`
-	TotalAPIKeys   int `json:"total_api_keys"`
+	Modules         ModuleStats         `json:"modules"`
+	Providers       ProviderStats       `json:"providers"`
+	ProviderMirrors ProviderMirrorStats `json:"provider_mirrors"`
+	BinaryMirrors   BinaryMirrorStats   `json:"binary_mirrors"`
+	Users           int                 `json:"users"`
+	Organizations   int                 `json:"organizations"`
+	SCMProviders    int                 `json:"scm_providers"`
+	Downloads       int64               `json:"downloads"`
+	RecentSyncs     []RecentSyncEntry   `json:"recent_syncs"`
+}
+
+// ModuleStats is the modules sub-object of dashboard stats.
+type ModuleStats struct {
+	Total     int                `json:"total"`
+	Versions  int                `json:"versions"`
+	Downloads int64              `json:"downloads"`
+	BySystem  []ModuleSystemStat `json:"by_system,omitempty"`
+}
+
+// ModuleSystemStat is one entry in the modules.by_system breakdown.
+type ModuleSystemStat struct {
+	System string `json:"system"`
+	Count  int    `json:"count"`
+}
+
+// ProviderStats is the providers sub-object of dashboard stats.
+type ProviderStats struct {
+	Total            int   `json:"total"`
+	TotalVersions    int   `json:"total_versions"`
+	Manual           int   `json:"manual"`
+	ManualVersions   int   `json:"manual_versions"`
+	Mirrored         int   `json:"mirrored"`
+	MirroredVersions int   `json:"mirrored_versions"`
+	Downloads        int64 `json:"downloads"`
+}
+
+// ProviderMirrorStats is the provider_mirrors sub-object.
+type ProviderMirrorStats struct {
+	Total   int `json:"total"`
+	Healthy int `json:"healthy"`
+	Failed  int `json:"failed"`
+}
+
+// BinaryMirrorStats is the binary_mirrors (Terraform/OpenTofu) sub-object.
+type BinaryMirrorStats struct {
+	Total     int              `json:"total"`
+	Healthy   int              `json:"healthy"`
+	Failed    int              `json:"failed"`
+	Syncing   int              `json:"syncing"`
+	Downloads int64            `json:"downloads"`
+	Platforms int              `json:"platforms"`
+	ByTool    []BinaryToolStat `json:"by_tool,omitempty"`
+}
+
+// BinaryToolStat is one entry in binary_mirrors.by_tool.
+type BinaryToolStat struct {
+	Tool  string `json:"tool"`
+	Count int    `json:"count"`
+}
+
+// RecentSyncEntry is one row of the recent_syncs ledger across all mirror
+// types (provider mirrors + binary mirrors).
+type RecentSyncEntry struct {
+	MirrorName      string `json:"mirror_name"`
+	MirrorType      string `json:"mirror_type"` // "binary" | "provider"
+	Status          string `json:"status"`
+	TriggeredBy     string `json:"triggered_by"`
+	StartedAt       string `json:"started_at"`
+	CompletedAt     string `json:"completed_at,omitempty"`
+	VersionsSynced  int    `json:"versions_synced"`
+	PlatformsSynced int    `json:"platforms_synced"`
 }

@@ -11,6 +11,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2026-05-01
+
+This release realigns the provider with backend `terraform-registry-backend` v1.0.0
+(the backend was at ~v0.5 when v0.1.0 was cut). Several fields were silently
+dropping data or sending unintended writes against the v1 backend; those are
+fixed here.
+
+### Breaking Changes
+
+- `data.registry_stats` reshaped to match backend `admin.DashboardStats`. The flat `total_*` counters (`total_modules`, `total_providers`, `total_users`, `total_organizations`, `total_mirrors`, `total_api_keys`) were always returning zero against backend ≥ v0.x and have been replaced with nested objects. Migration table:
+
+  | Old (always 0)        | New                                               |
+  |-----------------------|---------------------------------------------------|
+  | `total_modules`       | `modules.total`                                   |
+  | `total_providers`     | `providers.total`                                 |
+  | `total_users`         | `users`                                           |
+  | `total_organizations` | `organizations`                                   |
+  | `total_mirrors`       | `provider_mirrors.total` + `binary_mirrors.total` |
+  | `total_api_keys`      | removed (backend does not expose this counter)    |
+
+  New nested attributes also expose `modules.{versions, downloads, by_system}`, full provider breakdown (manual vs. mirrored), mirror health, binary mirror platforms, and a `recent_syncs` ledger.
+
+- `registry_scm_provider` removed the phantom `oauth_status` attribute (the backend does not and never did expose this field — it was always `null`). Use the new `is_active` attribute, plus `organization_id`, `tenant_id`, `client_id`, and `webhook_secret`, to manage SCM integrations.
+
+### Fixed
+
+- `registry_storage_config` no longer shows perpetual diff on the `active` attribute. The backend renamed the response field from `active` to `is_active` before this provider's first release; the JSON tag has been updated to match. (#6)
+- `registry_mirror` and `registry_terraform_mirror` updates no longer overwrite `enabled`, `sync_interval_hours`, `gpg_verify`, or `stable_only` with zero values when those attributes are unchanged. The client request structs now use pointer fields so omitted attributes leave the existing value unchanged on the backend. (#8)
+- `registry_scm_provider` updates no longer overwrite unrelated fields with zero values (same root cause as #8). (#9)
+
+### Added
+
+- `registry_scm_provider` exposes `is_active`, `organization_id`, `tenant_id`, `client_id`, and `webhook_secret`. The phantom `oauth_status` field is removed (see breaking changes). (#9)
+- `registry_module_scm_link` adds `repository_path` (default `/`, for monorepo layouts) and `auto_publish_enabled` (default `false`, to opt into auto-publish on tag push). The read-side response now also surfaces the persisted `module_path`. (#10)
+- `registry_approval_request` exposes 8 new computed attributes: `organization_id`, `requested_by`, `requested_by_name`, `reviewer_name`, `reviewed_at`, `expires_at`, `auto_approved`, and `mirror_name`. (#11)
+
+### Tests
+
+- New client unit tests round-trip representative backend response payloads to guard against future drift on storage configs, mirrors, terraform mirrors, SCM providers, module SCM links, approval requests, and dashboard stats.
+
+---
+
 ## [0.1.1] - 2026-03-21
 
 ### Changed

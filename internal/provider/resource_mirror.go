@@ -156,8 +156,14 @@ func (r *MirrorResource) Create(ctx context.Context, req resource.CreateRequest,
 	createReq := client.CreateMirrorRequest{
 		Name:                plan.Name.ValueString(),
 		UpstreamRegistryURL: plan.UpstreamRegistryURL.ValueString(),
-		Enabled:             plan.Enabled.ValueBool(),
-		SyncIntervalHours:   int(plan.SyncIntervalHours.ValueInt64()),
+	}
+	if !plan.Enabled.IsNull() && !plan.Enabled.IsUnknown() {
+		v := plan.Enabled.ValueBool()
+		createReq.Enabled = &v
+	}
+	if !plan.SyncIntervalHours.IsNull() && !plan.SyncIntervalHours.IsUnknown() {
+		v := int(plan.SyncIntervalHours.ValueInt64())
+		createReq.SyncIntervalHours = &v
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
@@ -220,11 +226,19 @@ func (r *MirrorResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	name := plan.Name.ValueString()
+	upstream := plan.UpstreamRegistryURL.ValueString()
 	updateReq := client.UpdateMirrorRequest{
-		Name:                plan.Name.ValueString(),
-		UpstreamRegistryURL: plan.UpstreamRegistryURL.ValueString(),
-		Enabled:             plan.Enabled.ValueBool(),
-		SyncIntervalHours:   int(plan.SyncIntervalHours.ValueInt64()),
+		Name:                &name,
+		UpstreamRegistryURL: &upstream,
+	}
+	if !plan.Enabled.IsNull() && !plan.Enabled.IsUnknown() {
+		v := plan.Enabled.ValueBool()
+		updateReq.Enabled = &v
+	}
+	if !plan.SyncIntervalHours.IsNull() && !plan.SyncIntervalHours.IsUnknown() {
+		v := int(plan.SyncIntervalHours.ValueInt64())
+		updateReq.SyncIntervalHours = &v
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()

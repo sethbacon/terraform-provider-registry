@@ -5,7 +5,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -20,14 +22,16 @@ type ModuleSCMLinkResource struct {
 }
 
 type ModuleSCMLinkResourceModel struct {
-	ModuleID      types.String `tfsdk:"module_id"`
-	SCMProviderID types.String `tfsdk:"scm_provider_id"`
-	Owner         types.String `tfsdk:"owner"`
-	Repo          types.String `tfsdk:"repo"`
-	Branch        types.String `tfsdk:"branch"`
-	TagPattern    types.String `tfsdk:"tag_pattern"`
-	CreatedAt     types.String `tfsdk:"created_at"`
-	UpdatedAt     types.String `tfsdk:"updated_at"`
+	ModuleID       types.String `tfsdk:"module_id"`
+	SCMProviderID  types.String `tfsdk:"scm_provider_id"`
+	Owner          types.String `tfsdk:"owner"`
+	Repo           types.String `tfsdk:"repo"`
+	Branch         types.String `tfsdk:"branch"`
+	RepositoryPath types.String `tfsdk:"repository_path"`
+	TagPattern     types.String `tfsdk:"tag_pattern"`
+	AutoPublish    types.Bool   `tfsdk:"auto_publish_enabled"`
+	CreatedAt      types.String `tfsdk:"created_at"`
+	UpdatedAt      types.String `tfsdk:"updated_at"`
 }
 
 func NewModuleSCMLinkResource() resource.Resource {
@@ -65,10 +69,22 @@ func (r *ModuleSCMLinkResource) Schema(_ context.Context, _ resource.SchemaReque
 				Description: "Default branch to watch.",
 				Required:    true,
 			},
+			"repository_path": schema.StringAttribute{
+				Description: "Path within the repository where the module sources live. Defaults to '/' (repo root). Use this for monorepo layouts.",
+				Optional:    true,
+				Computed:    true,
+				Default:     stringdefault.StaticString("/"),
+			},
 			"tag_pattern": schema.StringAttribute{
 				Description: "Optional glob pattern for version tags (e.g., 'v*').",
 				Optional:    true,
 				Computed:    true,
+			},
+			"auto_publish_enabled": schema.BoolAttribute{
+				Description: "Whether to automatically publish a new module version when a matching tag is pushed. Defaults to false.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
 			},
 			"created_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp when the link was created.",
@@ -109,6 +125,10 @@ func (r *ModuleSCMLinkResource) Create(ctx context.Context, req resource.CreateR
 		RepositoryOwner: plan.Owner.ValueString(),
 		RepositoryName:  plan.Repo.ValueString(),
 		DefaultBranch:   plan.Branch.ValueString(),
+		AutoPublish:     plan.AutoPublish.ValueBool(),
+	}
+	if !plan.RepositoryPath.IsNull() && !plan.RepositoryPath.IsUnknown() {
+		createReq.RepositoryPath = plan.RepositoryPath.ValueString()
 	}
 	if !plan.TagPattern.IsNull() && !plan.TagPattern.IsUnknown() {
 		createReq.TagPattern = plan.TagPattern.ValueString()
@@ -155,6 +175,10 @@ func (r *ModuleSCMLinkResource) Update(ctx context.Context, req resource.UpdateR
 		RepositoryOwner: plan.Owner.ValueString(),
 		RepositoryName:  plan.Repo.ValueString(),
 		DefaultBranch:   plan.Branch.ValueString(),
+		AutoPublish:     plan.AutoPublish.ValueBool(),
+	}
+	if !plan.RepositoryPath.IsNull() && !plan.RepositoryPath.IsUnknown() {
+		updateReq.RepositoryPath = plan.RepositoryPath.ValueString()
 	}
 	if !plan.TagPattern.IsNull() && !plan.TagPattern.IsUnknown() {
 		updateReq.TagPattern = plan.TagPattern.ValueString()
@@ -192,13 +216,15 @@ func (r *ModuleSCMLinkResource) ImportState(ctx context.Context, req resource.Im
 
 func moduleSCMLinkToModel(l *client.ModuleSCMLink) ModuleSCMLinkResourceModel {
 	model := ModuleSCMLinkResourceModel{
-		ModuleID:      types.StringValue(l.ModuleID),
-		SCMProviderID: types.StringValue(l.SCMProviderID),
-		Owner:         types.StringValue(l.RepositoryOwner),
-		Repo:          types.StringValue(l.RepositoryName),
-		Branch:        types.StringValue(l.DefaultBranch),
-		CreatedAt:     types.StringValue(l.CreatedAt),
-		UpdatedAt:     types.StringValue(l.UpdatedAt),
+		ModuleID:       types.StringValue(l.ModuleID),
+		SCMProviderID:  types.StringValue(l.SCMProviderID),
+		Owner:          types.StringValue(l.RepositoryOwner),
+		Repo:           types.StringValue(l.RepositoryName),
+		Branch:         types.StringValue(l.DefaultBranch),
+		RepositoryPath: types.StringValue(l.ModulePath),
+		AutoPublish:    types.BoolValue(l.AutoPublish),
+		CreatedAt:      types.StringValue(l.CreatedAt),
+		UpdatedAt:      types.StringValue(l.UpdatedAt),
 	}
 	if l.TagPattern != "" {
 		model.TagPattern = types.StringValue(l.TagPattern)

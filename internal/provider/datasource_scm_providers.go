@@ -21,13 +21,16 @@ type SCMProvidersDataSourceModel struct {
 }
 
 type SCMProviderDSItem struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Type        types.String `tfsdk:"type"`
-	BaseURL     types.String `tfsdk:"base_url"`
-	OAuthStatus types.String `tfsdk:"oauth_status"`
-	CreatedAt   types.String `tfsdk:"created_at"`
-	UpdatedAt   types.String `tfsdk:"updated_at"`
+	ID             types.String `tfsdk:"id"`
+	OrganizationID types.String `tfsdk:"organization_id"`
+	Name           types.String `tfsdk:"name"`
+	Type           types.String `tfsdk:"type"`
+	BaseURL        types.String `tfsdk:"base_url"`
+	TenantID       types.String `tfsdk:"tenant_id"`
+	ClientID       types.String `tfsdk:"client_id"`
+	IsActive       types.Bool   `tfsdk:"is_active"`
+	CreatedAt      types.String `tfsdk:"created_at"`
+	UpdatedAt      types.String `tfsdk:"updated_at"`
 }
 
 func NewSCMProvidersDataSource() datasource.DataSource {
@@ -47,13 +50,16 @@ func (d *SCMProvidersDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"id":           schema.StringAttribute{Computed: true, Description: "UUID."},
-						"name":         schema.StringAttribute{Computed: true, Description: "Display name."},
-						"type":         schema.StringAttribute{Computed: true, Description: "SCM type."},
-						"base_url":     schema.StringAttribute{Computed: true, Description: "Base URL for self-hosted instances."},
-						"oauth_status": schema.StringAttribute{Computed: true, Description: "OAuth token status."},
-						"created_at":   schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
-						"updated_at":   schema.StringAttribute{Computed: true, Description: "Last update timestamp."},
+						"id":              schema.StringAttribute{Computed: true, Description: "UUID."},
+						"organization_id": schema.StringAttribute{Computed: true, Description: "Organization the integration is scoped to (null for global)."},
+						"name":            schema.StringAttribute{Computed: true, Description: "Display name."},
+						"type":            schema.StringAttribute{Computed: true, Description: "SCM type."},
+						"base_url":        schema.StringAttribute{Computed: true, Description: "Base URL for self-hosted instances."},
+						"tenant_id":       schema.StringAttribute{Computed: true, Description: "Azure DevOps tenant ID."},
+						"client_id":       schema.StringAttribute{Computed: true, Description: "OAuth client ID."},
+						"is_active":       schema.BoolAttribute{Computed: true, Description: "Whether the integration is enabled."},
+						"created_at":      schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
+						"updated_at":      schema.StringAttribute{Computed: true, Description: "Last update timestamp."},
 					},
 				},
 			},
@@ -92,18 +98,29 @@ func (d *SCMProvidersDataSource) Read(ctx context.Context, req datasource.ReadRe
 			ID:        types.StringValue(s.ID),
 			Name:      types.StringValue(s.Name),
 			Type:      types.StringValue(s.ProviderType),
+			IsActive:  types.BoolValue(s.IsActive),
 			CreatedAt: types.StringValue(s.CreatedAt),
 			UpdatedAt: types.StringValue(s.UpdatedAt),
+		}
+		if s.OrganizationID != nil {
+			item.OrganizationID = types.StringValue(*s.OrganizationID)
+		} else {
+			item.OrganizationID = types.StringNull()
 		}
 		if s.BaseURL != nil {
 			item.BaseURL = types.StringValue(*s.BaseURL)
 		} else {
 			item.BaseURL = types.StringNull()
 		}
-		if s.OAuthStatus != nil {
-			item.OAuthStatus = types.StringValue(*s.OAuthStatus)
+		if s.TenantID != nil {
+			item.TenantID = types.StringValue(*s.TenantID)
 		} else {
-			item.OAuthStatus = types.StringNull()
+			item.TenantID = types.StringNull()
+		}
+		if s.ClientID != "" {
+			item.ClientID = types.StringValue(s.ClientID)
+		} else {
+			item.ClientID = types.StringNull()
 		}
 		items[i] = item
 	}
