@@ -60,6 +60,13 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # Pre-install Terraform so terraform-plugin-testing finds it on PATH
+      # instead of downloading and GPG-verifying it from releases.hashicorp.com.
+      # Avoids transient hc-install signature failures.
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
