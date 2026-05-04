@@ -9,7 +9,7 @@ storage backends, policies, and more.
 
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) >= 1.0
 - [Go](https://golang.org/doc/install) >= 1.25 (only required to build the provider from source)
-- A running [Terraform Registry Backend](https://github.com/sethbacon/terraform-registry-backend) >= v0.2.21
+- A running [Terraform Registry Backend](https://github.com/sethbacon/terraform-registry-backend) >= v1.0.0
 
 ## Using the Provider
 
@@ -20,7 +20,7 @@ terraform {
   required_providers {
     registry = {
       source  = "sethbacon/registry"
-      version = "~> 0.1"
+      version = "~> 0.2"
     }
   }
 }
