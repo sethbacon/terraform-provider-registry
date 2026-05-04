@@ -337,6 +337,8 @@ type TerraformMirror struct {
 	GPGVerify         bool     `json:"gpg_verify"`
 	StableOnly        bool     `json:"stable_only"`
 	SyncIntervalHours int      `json:"sync_interval_hours"`
+	CustomGPGKey      *string  `json:"custom_gpg_key,omitempty"`
+	SkipGPGVerify     bool     `json:"skip_gpg_verify"`
 	LastSyncAt        *string  `json:"last_sync_at,omitempty"`
 	LastSyncStatus    *string  `json:"last_sync_status,omitempty"`
 	LastSyncError     *string  `json:"last_sync_error,omitempty"`
@@ -360,6 +362,8 @@ type CreateTerraformMirrorRequest struct {
 	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
 	StableOnly        *bool    `json:"stable_only,omitempty"`
 	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
+	CustomGPGKey      *string  `json:"custom_gpg_key,omitempty"`
+	SkipGPGVerify     *bool    `json:"skip_gpg_verify,omitempty"`
 }
 
 // UpdateTerraformMirrorRequest is the payload for updating a Terraform mirror.
@@ -379,6 +383,8 @@ type UpdateTerraformMirrorRequest struct {
 	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
 	StableOnly        *bool    `json:"stable_only,omitempty"`
 	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
+	CustomGPGKey      *string  `json:"custom_gpg_key,omitempty"`
+	SkipGPGVerify     *bool    `json:"skip_gpg_verify,omitempty"`
 }
 
 // StorageConfig represents a storage backend configuration.

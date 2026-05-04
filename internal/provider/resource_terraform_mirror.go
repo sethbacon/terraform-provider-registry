@@ -31,6 +31,8 @@ type TerraformMirrorResourceModel struct {
 	PlatformFilter    types.List   `tfsdk:"platform_filter"`
 	VersionFilter     types.String `tfsdk:"version_filter"`
 	GPGVerify         types.Bool   `tfsdk:"gpg_verify"`
+	CustomGPGKey      types.String `tfsdk:"custom_gpg_key"`
+	SkipGPGVerify     types.Bool   `tfsdk:"skip_gpg_verify"`
 	StableOnly        types.Bool   `tfsdk:"stable_only"`
 	SyncIntervalHours types.Int64  `tfsdk:"sync_interval_hours"`
 	LastSyncAt        types.String `tfsdk:"last_sync_at"`
@@ -98,6 +100,18 @@ func (r *TerraformMirrorResource) Schema(_ context.Context, _ resource.SchemaReq
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
+			"custom_gpg_key": schema.StringAttribute{
+				Description: "Custom ASCII-armored GPG public key for signature verification.",
+				Optional:    true,
+				Computed:    true,
+				Sensitive:   true,
+			},
+			"skip_gpg_verify": schema.BoolAttribute{
+				Description: "Skip GPG verification entirely (overrides gpg_verify).",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+			},
 			"stable_only": schema.BoolAttribute{
 				Description: "Only mirror stable releases (no alpha/beta/rc).",
 				Optional:    true,
@@ -164,6 +178,14 @@ func (r *TerraformMirrorResource) Create(ctx context.Context, req resource.Creat
 	if !plan.GPGVerify.IsNull() && !plan.GPGVerify.IsUnknown() {
 		v := plan.GPGVerify.ValueBool()
 		createReq.GPGVerify = &v
+	}
+	if !plan.CustomGPGKey.IsNull() && !plan.CustomGPGKey.IsUnknown() {
+		v := plan.CustomGPGKey.ValueString()
+		createReq.CustomGPGKey = &v
+	}
+	if !plan.SkipGPGVerify.IsNull() && !plan.SkipGPGVerify.IsUnknown() {
+		v := plan.SkipGPGVerify.ValueBool()
+		createReq.SkipGPGVerify = &v
 	}
 	if !plan.StableOnly.IsNull() && !plan.StableOnly.IsUnknown() {
 		v := plan.StableOnly.ValueBool()
@@ -240,6 +262,14 @@ func (r *TerraformMirrorResource) Update(ctx context.Context, req resource.Updat
 		v := plan.GPGVerify.ValueBool()
 		updateReq.GPGVerify = &v
 	}
+	if !plan.CustomGPGKey.IsNull() && !plan.CustomGPGKey.IsUnknown() {
+		v := plan.CustomGPGKey.ValueString()
+		updateReq.CustomGPGKey = &v
+	}
+	if !plan.SkipGPGVerify.IsNull() && !plan.SkipGPGVerify.IsUnknown() {
+		v := plan.SkipGPGVerify.ValueBool()
+		updateReq.SkipGPGVerify = &v
+	}
 	if !plan.StableOnly.IsNull() && !plan.StableOnly.IsUnknown() {
 		v := plan.StableOnly.ValueBool()
 		updateReq.StableOnly = &v
@@ -307,6 +337,7 @@ func tfMirrorToModel(ctx context.Context, m *client.TerraformMirror) TerraformMi
 		Enabled:           types.BoolValue(m.Enabled),
 		UpstreamURL:       types.StringValue(m.UpstreamURL),
 		GPGVerify:         types.BoolValue(m.GPGVerify),
+		SkipGPGVerify:     types.BoolValue(m.SkipGPGVerify),
 		StableOnly:        types.BoolValue(m.StableOnly),
 		SyncIntervalHours: types.Int64Value(int64(m.SyncIntervalHours)),
 		PlatformFilter:    platList,
@@ -317,6 +348,11 @@ func tfMirrorToModel(ctx context.Context, m *client.TerraformMirror) TerraformMi
 		model.Description = types.StringValue(*m.Description)
 	} else {
 		model.Description = types.StringNull()
+	}
+	if m.CustomGPGKey != nil {
+		model.CustomGPGKey = types.StringValue(*m.CustomGPGKey)
+	} else {
+		model.CustomGPGKey = types.StringNull()
 	}
 	if m.VersionFilter != nil {
 		model.VersionFilter = types.StringValue(*m.VersionFilter)
