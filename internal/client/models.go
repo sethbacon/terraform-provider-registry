@@ -395,61 +395,80 @@ type StorageConfig struct {
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 	// Individual backend fields returned by API (credentials redacted)
-	LocalBasePath      *string `json:"local_base_path,omitempty"`
-	LocalServeDirectly *bool   `json:"local_serve_directly,omitempty"`
-	AzureAccountName   *string `json:"azure_account_name,omitempty"`
-	AzureContainerName *string `json:"azure_container_name,omitempty"`
-	S3Region           *string `json:"s3_region,omitempty"`
-	S3Bucket           *string `json:"s3_bucket,omitempty"`
-	S3Endpoint         *string `json:"s3_endpoint,omitempty"`
-	GCSBucket          *string `json:"gcs_bucket,omitempty"`
-	GCSProjectID       *string `json:"gcs_project_id,omitempty"`
+	LocalBasePath          *string `json:"local_base_path,omitempty"`
+	LocalServeDirectly     *bool   `json:"local_serve_directly,omitempty"`
+	AzureAccountName       *string `json:"azure_account_name,omitempty"`
+	AzureContainerName     *string `json:"azure_container_name,omitempty"`
+	AzureAccountKeySet     bool    `json:"azure_account_key_set"`
+	S3Region               *string `json:"s3_region,omitempty"`
+	S3Bucket               *string `json:"s3_bucket,omitempty"`
+	S3Endpoint             *string `json:"s3_endpoint,omitempty"`
+	S3AuthMethod           *string `json:"s3_auth_method,omitempty"`
+	S3RoleARN              *string `json:"s3_role_arn,omitempty"`
+	S3RoleSessionName      *string `json:"s3_role_session_name,omitempty"`
+	S3ExternalID           *string `json:"s3_external_id,omitempty"`
+	S3WebIdentityTokenFile *string `json:"s3_web_identity_token_file,omitempty"`
+	S3AccessKeyIDSet       bool    `json:"s3_access_key_id_set"`
+	S3SecretAccessKeySet   bool    `json:"s3_secret_access_key_set"`
+	GCSBucket              *string `json:"gcs_bucket,omitempty"`
+	GCSProjectID           *string `json:"gcs_project_id,omitempty"`
+	GCSAuthMethod          *string `json:"gcs_auth_method,omitempty"`
+	GCSCredentialsJSONSet  bool    `json:"gcs_credentials_json_set"`
 }
 
 // CreateStorageConfigRequest is the payload for creating a storage config.
 type CreateStorageConfigRequest struct {
-	BackendType        string `json:"backend_type"`
-	LocalBasePath      string `json:"local_base_path,omitempty"`
-	LocalServeDirectly *bool  `json:"local_serve_directly,omitempty"`
-	AzureAccountName   string `json:"azure_account_name,omitempty"`
-	AzureAccountKey    string `json:"azure_account_key,omitempty"`
-	AzureContainerName string `json:"azure_container_name,omitempty"`
-	AzureCDNURL        string `json:"azure_cdn_url,omitempty"`
-	S3Endpoint         string `json:"s3_endpoint,omitempty"`
-	S3Region           string `json:"s3_region,omitempty"`
-	S3Bucket           string `json:"s3_bucket,omitempty"`
-	S3AuthMethod       string `json:"s3_auth_method,omitempty"`
-	S3AccessKeyID      string `json:"s3_access_key_id,omitempty"`
-	S3SecretAccessKey  string `json:"s3_secret_access_key,omitempty"`
-	GCSBucket          string `json:"gcs_bucket,omitempty"`
-	GCSProjectID       string `json:"gcs_project_id,omitempty"`
-	GCSAuthMethod      string `json:"gcs_auth_method,omitempty"`
-	GCSCredentialsFile string `json:"gcs_credentials_file,omitempty"`
-	GCSCredentialsJSON string `json:"gcs_credentials_json,omitempty"`
-	GCSEndpoint        string `json:"gcs_endpoint,omitempty"`
+	BackendType            string `json:"backend_type"`
+	Activate               bool   `json:"activate,omitempty"`
+	LocalBasePath          string `json:"local_base_path,omitempty"`
+	LocalServeDirectly     *bool  `json:"local_serve_directly,omitempty"`
+	AzureAccountName       string `json:"azure_account_name,omitempty"`
+	AzureAccountKey        string `json:"azure_account_key,omitempty"`
+	AzureContainerName     string `json:"azure_container_name,omitempty"`
+	AzureCDNURL            string `json:"azure_cdn_url,omitempty"`
+	S3Endpoint             string `json:"s3_endpoint,omitempty"`
+	S3Region               string `json:"s3_region,omitempty"`
+	S3Bucket               string `json:"s3_bucket,omitempty"`
+	S3AuthMethod           string `json:"s3_auth_method,omitempty"`
+	S3AccessKeyID          string `json:"s3_access_key_id,omitempty"`
+	S3SecretAccessKey      string `json:"s3_secret_access_key,omitempty"`
+	S3RoleARN              string `json:"s3_role_arn,omitempty"`
+	S3RoleSessionName      string `json:"s3_role_session_name,omitempty"`
+	S3ExternalID           string `json:"s3_external_id,omitempty"`
+	S3WebIdentityTokenFile string `json:"s3_web_identity_token_file,omitempty"`
+	GCSBucket              string `json:"gcs_bucket,omitempty"`
+	GCSProjectID           string `json:"gcs_project_id,omitempty"`
+	GCSAuthMethod          string `json:"gcs_auth_method,omitempty"`
+	GCSCredentialsFile     string `json:"gcs_credentials_file,omitempty"`
+	GCSCredentialsJSON     string `json:"gcs_credentials_json,omitempty"`
+	GCSEndpoint            string `json:"gcs_endpoint,omitempty"`
 }
 
 // UpdateStorageConfigRequest is the payload for updating a storage config.
 type UpdateStorageConfigRequest struct {
-	BackendType        string `json:"backend_type"`
-	LocalBasePath      string `json:"local_base_path,omitempty"`
-	LocalServeDirectly *bool  `json:"local_serve_directly,omitempty"`
-	AzureAccountName   string `json:"azure_account_name,omitempty"`
-	AzureAccountKey    string `json:"azure_account_key,omitempty"`
-	AzureContainerName string `json:"azure_container_name,omitempty"`
-	AzureCDNURL        string `json:"azure_cdn_url,omitempty"`
-	S3Endpoint         string `json:"s3_endpoint,omitempty"`
-	S3Region           string `json:"s3_region,omitempty"`
-	S3Bucket           string `json:"s3_bucket,omitempty"`
-	S3AuthMethod       string `json:"s3_auth_method,omitempty"`
-	S3AccessKeyID      string `json:"s3_access_key_id,omitempty"`
-	S3SecretAccessKey  string `json:"s3_secret_access_key,omitempty"`
-	GCSBucket          string `json:"gcs_bucket,omitempty"`
-	GCSProjectID       string `json:"gcs_project_id,omitempty"`
-	GCSAuthMethod      string `json:"gcs_auth_method,omitempty"`
-	GCSCredentialsFile string `json:"gcs_credentials_file,omitempty"`
-	GCSCredentialsJSON string `json:"gcs_credentials_json,omitempty"`
-	GCSEndpoint        string `json:"gcs_endpoint,omitempty"`
+	BackendType            string `json:"backend_type"`
+	LocalBasePath          string `json:"local_base_path,omitempty"`
+	LocalServeDirectly     *bool  `json:"local_serve_directly,omitempty"`
+	AzureAccountName       string `json:"azure_account_name,omitempty"`
+	AzureAccountKey        string `json:"azure_account_key,omitempty"`
+	AzureContainerName     string `json:"azure_container_name,omitempty"`
+	AzureCDNURL            string `json:"azure_cdn_url,omitempty"`
+	S3Endpoint             string `json:"s3_endpoint,omitempty"`
+	S3Region               string `json:"s3_region,omitempty"`
+	S3Bucket               string `json:"s3_bucket,omitempty"`
+	S3AuthMethod           string `json:"s3_auth_method,omitempty"`
+	S3AccessKeyID          string `json:"s3_access_key_id,omitempty"`
+	S3SecretAccessKey      string `json:"s3_secret_access_key,omitempty"`
+	S3RoleARN              string `json:"s3_role_arn,omitempty"`
+	S3RoleSessionName      string `json:"s3_role_session_name,omitempty"`
+	S3ExternalID           string `json:"s3_external_id,omitempty"`
+	S3WebIdentityTokenFile string `json:"s3_web_identity_token_file,omitempty"`
+	GCSBucket              string `json:"gcs_bucket,omitempty"`
+	GCSProjectID           string `json:"gcs_project_id,omitempty"`
+	GCSAuthMethod          string `json:"gcs_auth_method,omitempty"`
+	GCSCredentialsFile     string `json:"gcs_credentials_file,omitempty"`
+	GCSCredentialsJSON     string `json:"gcs_credentials_json,omitempty"`
+	GCSEndpoint            string `json:"gcs_endpoint,omitempty"`
 }
 
 // RoleTemplate represents an RBAC role template.
