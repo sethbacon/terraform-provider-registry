@@ -124,18 +124,28 @@ type UpdateAPIKeyRequest struct {
 }
 
 // Module represents a registry module record.
+//
+// Mirrors backend models.Module. The deprecation fields (Deprecated,
+// DeprecatedAt, DeprecationMessage, SuccessorModuleID) reflect module-level
+// deprecation set via POST /api/v1/modules/{ns}/{name}/{sys}/deprecate. They
+// are read-only here; managing the deprecation lifecycle is the job of a
+// dedicated registry_module_deprecation resource (tracked separately).
 type Module struct {
-	ID             string  `json:"id"`
-	OrganizationID string  `json:"organization_id"`
-	Namespace      string  `json:"namespace"`
-	Name           string  `json:"name"`
-	System         string  `json:"system"`
-	Description    *string `json:"description,omitempty"`
-	Source         *string `json:"source,omitempty"`
-	CreatedBy      *string `json:"created_by,omitempty"`
-	CreatedByName  *string `json:"created_by_name,omitempty"`
-	CreatedAt      string  `json:"created_at"`
-	UpdatedAt      string  `json:"updated_at"`
+	ID                 string  `json:"id"`
+	OrganizationID     string  `json:"organization_id"`
+	Namespace          string  `json:"namespace"`
+	Name               string  `json:"name"`
+	System             string  `json:"system"`
+	Description        *string `json:"description,omitempty"`
+	Source             *string `json:"source,omitempty"`
+	CreatedBy          *string `json:"created_by,omitempty"`
+	CreatedByName      *string `json:"created_by_name,omitempty"`
+	CreatedAt          string  `json:"created_at"`
+	UpdatedAt          string  `json:"updated_at"`
+	Deprecated         bool    `json:"deprecated"`
+	DeprecatedAt       *string `json:"deprecated_at,omitempty"`
+	DeprecationMessage *string `json:"deprecation_message,omitempty"`
+	SuccessorModuleID  *string `json:"successor_module_id,omitempty"`
 }
 
 // CreateModuleRequest is the payload for creating a module record.

@@ -23,15 +23,19 @@ type ModulesDataSourceModel struct {
 }
 
 type ModuleDSItem struct {
-	ID             types.String `tfsdk:"id"`
-	OrganizationID types.String `tfsdk:"organization_id"`
-	Namespace      types.String `tfsdk:"namespace"`
-	Name           types.String `tfsdk:"name"`
-	System         types.String `tfsdk:"system"`
-	Description    types.String `tfsdk:"description"`
-	Source         types.String `tfsdk:"source"`
-	CreatedAt      types.String `tfsdk:"created_at"`
-	UpdatedAt      types.String `tfsdk:"updated_at"`
+	ID                 types.String `tfsdk:"id"`
+	OrganizationID     types.String `tfsdk:"organization_id"`
+	Namespace          types.String `tfsdk:"namespace"`
+	Name               types.String `tfsdk:"name"`
+	System             types.String `tfsdk:"system"`
+	Description        types.String `tfsdk:"description"`
+	Source             types.String `tfsdk:"source"`
+	Deprecated         types.Bool   `tfsdk:"deprecated"`
+	DeprecatedAt       types.String `tfsdk:"deprecated_at"`
+	DeprecationMessage types.String `tfsdk:"deprecation_message"`
+	SuccessorModuleID  types.String `tfsdk:"successor_module_id"`
+	CreatedAt          types.String `tfsdk:"created_at"`
+	UpdatedAt          types.String `tfsdk:"updated_at"`
 }
 
 func NewModulesDataSource() datasource.DataSource {
@@ -59,15 +63,19 @@ func (d *ModulesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"id":              schema.StringAttribute{Computed: true, Description: "UUID."},
-						"organization_id": schema.StringAttribute{Computed: true, Description: "Organization UUID."},
-						"namespace":       schema.StringAttribute{Computed: true, Description: "Module namespace."},
-						"name":            schema.StringAttribute{Computed: true, Description: "Module name."},
-						"system":          schema.StringAttribute{Computed: true, Description: "Provider system."},
-						"description":     schema.StringAttribute{Computed: true, Description: "Description."},
-						"source":          schema.StringAttribute{Computed: true, Description: "Source repository URL."},
-						"created_at":      schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
-						"updated_at":      schema.StringAttribute{Computed: true, Description: "Last update timestamp."},
+						"id":                  schema.StringAttribute{Computed: true, Description: "UUID."},
+						"organization_id":     schema.StringAttribute{Computed: true, Description: "Organization UUID."},
+						"namespace":           schema.StringAttribute{Computed: true, Description: "Module namespace."},
+						"name":                schema.StringAttribute{Computed: true, Description: "Module name."},
+						"system":              schema.StringAttribute{Computed: true, Description: "Provider system."},
+						"description":         schema.StringAttribute{Computed: true, Description: "Description."},
+						"source":              schema.StringAttribute{Computed: true, Description: "Source repository URL."},
+						"deprecated":          schema.BoolAttribute{Computed: true, Description: "Whether the module is deprecated."},
+						"deprecated_at":       schema.StringAttribute{Computed: true, Description: "Deprecation timestamp."},
+						"deprecation_message": schema.StringAttribute{Computed: true, Description: "Optional deprecation message."},
+						"successor_module_id": schema.StringAttribute{Computed: true, Description: "UUID of the successor module."},
+						"created_at":          schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
+						"updated_at":          schema.StringAttribute{Computed: true, Description: "Last update timestamp."},
 					},
 				},
 			},
@@ -108,6 +116,7 @@ func (d *ModulesDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			Namespace:      types.StringValue(m.Namespace),
 			Name:           types.StringValue(m.Name),
 			System:         types.StringValue(m.System),
+			Deprecated:     types.BoolValue(m.Deprecated),
 			CreatedAt:      types.StringValue(m.CreatedAt),
 			UpdatedAt:      types.StringValue(m.UpdatedAt),
 		}
@@ -120,6 +129,21 @@ func (d *ModulesDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			item.Source = types.StringValue(*m.Source)
 		} else {
 			item.Source = types.StringNull()
+		}
+		if m.DeprecatedAt != nil {
+			item.DeprecatedAt = types.StringValue(*m.DeprecatedAt)
+		} else {
+			item.DeprecatedAt = types.StringNull()
+		}
+		if m.DeprecationMessage != nil {
+			item.DeprecationMessage = types.StringValue(*m.DeprecationMessage)
+		} else {
+			item.DeprecationMessage = types.StringNull()
+		}
+		if m.SuccessorModuleID != nil {
+			item.SuccessorModuleID = types.StringValue(*m.SuccessorModuleID)
+		} else {
+			item.SuccessorModuleID = types.StringNull()
 		}
 		items[i] = item
 	}
