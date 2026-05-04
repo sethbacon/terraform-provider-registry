@@ -266,23 +266,25 @@ type UpdateModuleSCMLinkRequest struct {
 
 // Mirror represents a provider mirror configuration.
 type Mirror struct {
-	ID                  string   `json:"id"`
-	Name                string   `json:"name"`
-	Description         *string  `json:"description,omitempty"`
-	UpstreamRegistryURL string   `json:"upstream_registry_url"`
-	OrganizationID      *string  `json:"organization_id,omitempty"`
-	NamespaceFilter     []string `json:"namespace_filter,omitempty"`
-	ProviderFilter      []string `json:"provider_filter,omitempty"`
-	VersionFilter       *string  `json:"version_filter,omitempty"`
-	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             bool     `json:"enabled"`
-	SyncIntervalHours   int      `json:"sync_interval_hours"`
-	LastSyncAt          *string  `json:"last_sync_at,omitempty"`
-	LastSyncStatus      *string  `json:"last_sync_status,omitempty"`
-	LastSyncError       *string  `json:"last_sync_error,omitempty"`
-	CreatedAt           string   `json:"created_at"`
-	UpdatedAt           string   `json:"updated_at"`
-	CreatedBy           *string  `json:"created_by,omitempty"`
+	ID                       string   `json:"id"`
+	Name                     string   `json:"name"`
+	Description              *string  `json:"description,omitempty"`
+	UpstreamRegistryURL      string   `json:"upstream_registry_url"`
+	OrganizationID           *string  `json:"organization_id,omitempty"`
+	NamespaceFilter          []string `json:"namespace_filter,omitempty"`
+	ProviderFilter           []string `json:"provider_filter,omitempty"`
+	VersionFilter            *string  `json:"version_filter,omitempty"`
+	PlatformFilter           []string `json:"platform_filter,omitempty"`
+	Enabled                  bool     `json:"enabled"`
+	SyncIntervalHours        int      `json:"sync_interval_hours"`
+	PullThroughEnabled       bool     `json:"pull_through_enabled"`
+	PullThroughCacheTTLHours int      `json:"pull_through_cache_ttl_hours"`
+	LastSyncAt               *string  `json:"last_sync_at,omitempty"`
+	LastSyncStatus           *string  `json:"last_sync_status,omitempty"`
+	LastSyncError            *string  `json:"last_sync_error,omitempty"`
+	CreatedAt                string   `json:"created_at"`
+	UpdatedAt                string   `json:"updated_at"`
+	CreatedBy                *string  `json:"created_by,omitempty"`
 }
 
 // CreateMirrorRequest is the payload for creating a mirror.
@@ -292,16 +294,18 @@ type Mirror struct {
 // CreateMirrorConfigRequest semantics in
 // backend/internal/db/models/mirror.go.
 type CreateMirrorRequest struct {
-	Name                string   `json:"name"`
-	Description         *string  `json:"description,omitempty"`
-	UpstreamRegistryURL string   `json:"upstream_registry_url"`
-	OrganizationID      *string  `json:"organization_id,omitempty"`
-	NamespaceFilter     []string `json:"namespace_filter,omitempty"`
-	ProviderFilter      []string `json:"provider_filter,omitempty"`
-	VersionFilter       *string  `json:"version_filter,omitempty"`
-	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             *bool    `json:"enabled,omitempty"`
-	SyncIntervalHours   *int     `json:"sync_interval_hours,omitempty"`
+	Name                     string   `json:"name"`
+	Description              *string  `json:"description,omitempty"`
+	UpstreamRegistryURL      string   `json:"upstream_registry_url"`
+	OrganizationID           *string  `json:"organization_id,omitempty"`
+	NamespaceFilter          []string `json:"namespace_filter,omitempty"`
+	ProviderFilter           []string `json:"provider_filter,omitempty"`
+	VersionFilter            *string  `json:"version_filter,omitempty"`
+	PlatformFilter           []string `json:"platform_filter,omitempty"`
+	Enabled                  *bool    `json:"enabled,omitempty"`
+	SyncIntervalHours        *int     `json:"sync_interval_hours,omitempty"`
+	PullThroughEnabled       *bool    `json:"pull_through_enabled,omitempty"`
+	PullThroughCacheTTLHours *int     `json:"pull_through_cache_ttl_hours,omitempty"`
 }
 
 // UpdateMirrorRequest is the payload for updating a mirror.
@@ -312,16 +316,18 @@ type CreateMirrorRequest struct {
 // bool/int zero values would silently disable the mirror or reset its sync
 // interval to zero.
 type UpdateMirrorRequest struct {
-	Name                *string  `json:"name,omitempty"`
-	Description         *string  `json:"description,omitempty"`
-	UpstreamRegistryURL *string  `json:"upstream_registry_url,omitempty"`
-	OrganizationID      *string  `json:"organization_id,omitempty"`
-	NamespaceFilter     []string `json:"namespace_filter,omitempty"`
-	ProviderFilter      []string `json:"provider_filter,omitempty"`
-	VersionFilter       *string  `json:"version_filter,omitempty"`
-	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             *bool    `json:"enabled,omitempty"`
-	SyncIntervalHours   *int     `json:"sync_interval_hours,omitempty"`
+	Name                     *string  `json:"name,omitempty"`
+	Description              *string  `json:"description,omitempty"`
+	UpstreamRegistryURL      *string  `json:"upstream_registry_url,omitempty"`
+	OrganizationID           *string  `json:"organization_id,omitempty"`
+	NamespaceFilter          []string `json:"namespace_filter,omitempty"`
+	ProviderFilter           []string `json:"provider_filter,omitempty"`
+	VersionFilter            *string  `json:"version_filter,omitempty"`
+	PlatformFilter           []string `json:"platform_filter,omitempty"`
+	Enabled                  *bool    `json:"enabled,omitempty"`
+	SyncIntervalHours        *int     `json:"sync_interval_hours,omitempty"`
+	PullThroughEnabled       *bool    `json:"pull_through_enabled,omitempty"`
+	PullThroughCacheTTLHours *int     `json:"pull_through_cache_ttl_hours,omitempty"`
 }
 
 // TerraformMirror represents a Terraform binary mirror configuration.
