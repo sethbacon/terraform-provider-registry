@@ -25,24 +25,33 @@ type UpdateUserRequest struct {
 }
 
 // Organization represents a registry organization.
+//
+// Mirrors backend models.Organization. IdpType / IdpName bind the org to a
+// specific IdP and are nullable; null means no restriction.
 type Organization struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	DisplayName string  `json:"display_name"`
+	IdpType     *string `json:"idp_type,omitempty"`
+	IdpName     *string `json:"idp_name,omitempty"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 // CreateOrganizationRequest is the payload for creating an organization.
 type CreateOrganizationRequest struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
+	Name        string  `json:"name"`
+	DisplayName string  `json:"display_name"`
+	IdpType     *string `json:"idp_type,omitempty"`
+	IdpName     *string `json:"idp_name,omitempty"`
 }
 
 // UpdateOrganizationRequest is the payload for updating an organization.
 type UpdateOrganizationRequest struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
+	Name        string  `json:"name"`
+	DisplayName string  `json:"display_name"`
+	IdpType     *string `json:"idp_type,omitempty"`
+	IdpName     *string `json:"idp_name,omitempty"`
 }
 
 // OrganizationMember represents a user's membership in an organization.
