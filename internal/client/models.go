@@ -505,12 +505,16 @@ type Policy struct {
 	Name             string  `json:"name"`
 	Description      *string `json:"description,omitempty"`
 	PolicyType       string  `json:"policy_type"`
+	OrganizationID   *string `json:"organization_id,omitempty"`
+	OrganizationName *string `json:"organization_name,omitempty"`
 	UpstreamRegistry *string `json:"upstream_registry,omitempty"`
 	NamespacePattern *string `json:"namespace_pattern,omitempty"`
 	ProviderPattern  *string `json:"provider_pattern,omitempty"`
 	Priority         int     `json:"priority"`
 	IsActive         bool    `json:"is_active"`
 	RequiresApproval bool    `json:"requires_approval"`
+	CreatedBy        *string `json:"created_by,omitempty"`
+	CreatedByName    *string `json:"created_by_name,omitempty"`
 	CreatedAt        string  `json:"created_at"`
 	UpdatedAt        string  `json:"updated_at"`
 }
@@ -520,6 +524,7 @@ type CreatePolicyRequest struct {
 	Name             string  `json:"name"`
 	Description      *string `json:"description,omitempty"`
 	PolicyType       string  `json:"policy_type"`
+	OrganizationID   *string `json:"organization_id,omitempty"`
 	UpstreamRegistry *string `json:"upstream_registry,omitempty"`
 	NamespacePattern *string `json:"namespace_pattern,omitempty"`
 	ProviderPattern  *string `json:"provider_pattern,omitempty"`
