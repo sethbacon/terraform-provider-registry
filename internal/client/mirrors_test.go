@@ -73,6 +73,40 @@ func TestUpdateTerraformMirrorRequest_OmitsUnsetFields(t *testing.T) {
 	}
 }
 
+// TestUpdateTerraformMirrorRequest_GPGFields confirms custom_gpg_key and
+// skip_gpg_verify are omitted when unset and present when set.
+func TestUpdateTerraformMirrorRequest_GPGFields(t *testing.T) {
+	key := "-----BEGIN PGP PUBLIC KEY BLOCK-----\ntest\n-----END PGP PUBLIC KEY BLOCK-----"
+	skip := true
+	req := UpdateTerraformMirrorRequest{
+		CustomGPGKey:  &key,
+		SkipGPGVerify: &skip,
+	}
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	wire := string(body)
+
+	if !strings.Contains(wire, `"custom_gpg_key"`) {
+		t.Errorf("custom_gpg_key missing from payload: %s", wire)
+	}
+	if !strings.Contains(wire, `"skip_gpg_verify":true`) {
+		t.Errorf("skip_gpg_verify missing from payload: %s", wire)
+	}
+
+	// Unset fields must not appear.
+	reqEmpty := UpdateTerraformMirrorRequest{}
+	bodyEmpty, _ := json.Marshal(reqEmpty)
+	wireEmpty := string(bodyEmpty)
+	for _, k := range []string{`"custom_gpg_key"`, `"skip_gpg_verify"`} {
+		if strings.Contains(wireEmpty, k) {
+			t.Errorf("unset field %s leaked into wire payload: %s", k, wireEmpty)
+		}
+	}
+}
+
 // TestCreateMirrorRequest_RequiredFieldsPresent confirms required scalars
 // (which are not pointers) still ship even when other fields are unset.
 func TestCreateMirrorRequest_RequiredFieldsPresent(t *testing.T) {
