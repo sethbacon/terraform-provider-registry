@@ -1,5 +1,26 @@
 package client
 
+// PolicyEngineConfig represents the rego policy engine bundle configuration.
+type PolicyEngineConfig struct {
+	BundleURL     string  `json:"bundle_url"`
+	BundleETag    *string `json:"bundle_etag,omitempty"`
+	LastLoadedAt  *string `json:"last_loaded_at,omitempty"`
+	Status        string  `json:"status"`
+}
+
+// PolicyEvaluateRequest is the payload for evaluating rego policy.
+type PolicyEvaluateRequest struct {
+	Input map[string]interface{} `json:"input"`
+	Query string                 `json:"query,omitempty"`
+}
+
+// PolicyEvaluateResult holds the result of a rego policy evaluation.
+type PolicyEvaluateResult struct {
+	Allowed bool                   `json:"allowed"`
+	Reason  *string                `json:"reason,omitempty"`
+	Result  map[string]interface{} `json:"result,omitempty"`
+}
+
 // OIDCConfig represents the backend OIDC configuration (read-only).
 type OIDCConfig struct {
 	Issuer         string   `json:"issuer"`
