@@ -165,6 +165,7 @@ func (p *RegistryProvider) Resources(_ context.Context) []func() resource.Resour
 		NewModuleVersionDeprecationResource,
 		NewProviderVersionDeprecationResource,
 		NewOIDCGroupMappingResource,
+		NewStorageMigrationResource,
 	}
 }
 
