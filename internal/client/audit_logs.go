@@ -45,6 +45,14 @@ func (c *Client) ListAuditLogs(ctx context.Context, action, resourceType string,
 	return logs, raw.Pagination.Total, nil
 }
 
+func (c *Client) GetAuditLog(ctx context.Context, id string) (*AuditLog, error) {
+	var l AuditLog
+	if err := c.Get(ctx, "/api/v1/admin/audit-logs/"+id, &l); err != nil {
+		return nil, err
+	}
+	return &l, nil
+}
+
 func (c *Client) GetStats(ctx context.Context) (*Stats, error) {
 	var resp struct {
 		Stats Stats `json:"stats"`

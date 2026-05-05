@@ -43,6 +43,20 @@ type PolicyEvaluateResult struct {
 	Result  map[string]interface{} `json:"result,omitempty"`
 }
 
+// IdentityGroupMapping represents a single SAML/LDAP group → role mapping.
+type IdentityGroupMapping struct {
+	Group          string `json:"group"`
+	OrganizationID string `json:"organization_id"`
+	RoleTemplateID string `json:"role_template_id"`
+}
+
+// MTLSConfig represents the backend mTLS certificate configuration.
+type MTLSConfig struct {
+	Enabled    bool    `json:"enabled"`
+	ClientCACN *string `json:"client_ca_cn,omitempty"`
+	ServerCert *string `json:"server_cert_subject,omitempty"`
+}
+
 // OIDCConfig represents the backend OIDC configuration (read-only).
 type OIDCConfig struct {
 	Issuer         string   `json:"issuer"`
