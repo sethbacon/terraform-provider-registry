@@ -1,5 +1,21 @@
 package client
 
+// OIDCConfig represents the backend OIDC configuration (read-only).
+type OIDCConfig struct {
+	Issuer         string   `json:"issuer"`
+	ClientID       string   `json:"client_id"`
+	Scopes         []string `json:"scopes"`
+	GroupsClaim    string   `json:"groups_claim"`
+	UsernameClaim  string   `json:"username_claim"`
+}
+
+// OIDCGroupMapping represents a single OIDC group → role mapping entry.
+type OIDCGroupMapping struct {
+	OIDCGroup      string `json:"oidc_group"`
+	OrganizationID string `json:"organization_id"`
+	RoleTemplateID string `json:"role_template_id"`
+}
+
 // User represents a registry user.
 type User struct {
 	ID        string  `json:"id"`
