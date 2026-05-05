@@ -1,5 +1,137 @@
 package client
 
+// StorageMigration represents a storage migration job.
+type StorageMigration struct {
+	ID              string  `json:"id"`
+	SourceConfigID  string  `json:"source_config_id"`
+	TargetConfigID  string  `json:"target_config_id"`
+	Status          string  `json:"status"`
+	ObjectsTotal    int     `json:"objects_total"`
+	ObjectsMigrated int     `json:"objects_migrated"`
+	ObjectsFailed   int     `json:"objects_failed"`
+	StartedAt       *string `json:"started_at,omitempty"`
+	CompletedAt     *string `json:"completed_at,omitempty"`
+	Error           *string `json:"error,omitempty"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+}
+
+// CreateStorageMigrationRequest is the payload for starting a migration.
+type CreateStorageMigrationRequest struct {
+	SourceConfigID string `json:"source_config_id"`
+	TargetConfigID string `json:"target_config_id"`
+}
+
+// PolicyEngineConfig represents the rego policy engine bundle configuration.
+type PolicyEngineConfig struct {
+	BundleURL     string  `json:"bundle_url"`
+	BundleETag    *string `json:"bundle_etag,omitempty"`
+	LastLoadedAt  *string `json:"last_loaded_at,omitempty"`
+	Status        string  `json:"status"`
+}
+
+// PolicyEvaluateRequest is the payload for evaluating rego policy.
+type PolicyEvaluateRequest struct {
+	Input map[string]interface{} `json:"input"`
+	Query string                 `json:"query,omitempty"`
+}
+
+// PolicyEvaluateResult holds the result of a rego policy evaluation.
+type PolicyEvaluateResult struct {
+	Allowed bool                   `json:"allowed"`
+	Reason  *string                `json:"reason,omitempty"`
+	Result  map[string]interface{} `json:"result,omitempty"`
+}
+
+// Advisory represents a CVE or security advisory entry.
+type Advisory struct {
+	ID          string  `json:"id"`
+	ExternalID  string  `json:"external_id"`
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
+	Severity    string  `json:"severity"`
+	URL         *string `json:"url,omitempty"`
+	PublishedAt *string `json:"published_at,omitempty"`
+	ResolvedAt  *string `json:"resolved_at,omitempty"`
+	Active      bool    `json:"active"`
+}
+
+// ScanningConfig represents the backend scanner tool configuration.
+type ScanningConfig struct {
+	Enabled         bool     `json:"enabled"`
+	BinaryPath      *string  `json:"binary_path,omitempty"`
+	DetectedVersion *string  `json:"detected_version,omitempty"`
+	EnabledTools    []string `json:"enabled_tools"`
+}
+
+// ScanningStats represents aggregate scan statistics.
+type ScanningStats struct {
+	TotalScans     int `json:"total_scans"`
+	PassedScans    int `json:"passed_scans"`
+	FailedScans    int `json:"failed_scans"`
+	PendingScans   int `json:"pending_scans"`
+	TotalFindings  int `json:"total_findings"`
+	CriticalCount  int `json:"critical_count"`
+	HighCount      int `json:"high_count"`
+	MediumCount    int `json:"medium_count"`
+	LowCount       int `json:"low_count"`
+}
+
+// ScanFinding represents a single security finding in a scan.
+type ScanFinding struct {
+	ID          string  `json:"id"`
+	RuleID      string  `json:"rule_id"`
+	Severity    string  `json:"severity"`
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
+	Resource    *string `json:"resource,omitempty"`
+	FilePath    *string `json:"file_path,omitempty"`
+	LineNumber  *int    `json:"line_number,omitempty"`
+}
+
+// Scan represents a security scan result.
+type Scan struct {
+	ID             string        `json:"id"`
+	Status         string        `json:"status"`
+	Scanner        string        `json:"scanner"`
+	Passed         bool          `json:"passed"`
+	Findings       []ScanFinding `json:"findings,omitempty"`
+	ExecutionLog   *string       `json:"execution_log,omitempty"`
+	StartedAt      *string       `json:"started_at,omitempty"`
+	CompletedAt    *string       `json:"completed_at,omitempty"`
+	CreatedAt      string        `json:"created_at"`
+}
+
+// IdentityGroupMapping represents a single SAML/LDAP group → role mapping.
+type IdentityGroupMapping struct {
+	Group          string `json:"group"`
+	OrganizationID string `json:"organization_id"`
+	RoleTemplateID string `json:"role_template_id"`
+}
+
+// MTLSConfig represents the backend mTLS certificate configuration.
+type MTLSConfig struct {
+	Enabled    bool    `json:"enabled"`
+	ClientCACN *string `json:"client_ca_cn,omitempty"`
+	ServerCert *string `json:"server_cert_subject,omitempty"`
+}
+
+// OIDCConfig represents the backend OIDC configuration (read-only).
+type OIDCConfig struct {
+	Issuer         string   `json:"issuer"`
+	ClientID       string   `json:"client_id"`
+	Scopes         []string `json:"scopes"`
+	GroupsClaim    string   `json:"groups_claim"`
+	UsernameClaim  string   `json:"username_claim"`
+}
+
+// OIDCGroupMapping represents a single OIDC group → role mapping entry.
+type OIDCGroupMapping struct {
+	OIDCGroup      string `json:"oidc_group"`
+	OrganizationID string `json:"organization_id"`
+	RoleTemplateID string `json:"role_template_id"`
+}
+
 // User represents a registry user.
 type User struct {
 	ID        string  `json:"id"`
@@ -162,6 +294,37 @@ type CreateModuleRequest struct {
 type UpdateModuleRequest struct {
 	Description *string `json:"description,omitempty"`
 	Source      *string `json:"source,omitempty"`
+}
+
+// ModuleVersion represents a single version of a registry module.
+type ModuleVersion struct {
+	ID                 string  `json:"id"`
+	Version            string  `json:"version"`
+	Deprecated         bool    `json:"deprecated"`
+	DeprecatedAt       *string `json:"deprecated_at,omitempty"`
+	DeprecationMessage *string `json:"deprecation_message,omitempty"`
+	ReplacementSource  *string `json:"replacement_source,omitempty"`
+}
+
+// DeprecateModuleRequest is the payload for deprecating a module or module version.
+type DeprecateModuleRequest struct {
+	Message           string  `json:"message"`
+	SuccessorModuleID *string `json:"successor_module_id,omitempty"`
+	ReplacementSource *string `json:"replacement_source,omitempty"`
+}
+
+// ProviderVersion represents a single version of a registry provider.
+type ProviderVersion struct {
+	ID                 string  `json:"id"`
+	Version            string  `json:"version"`
+	Deprecated         bool    `json:"deprecated"`
+	DeprecatedAt       *string `json:"deprecated_at,omitempty"`
+	DeprecationMessage *string `json:"deprecation_message,omitempty"`
+}
+
+// DeprecateProviderVersionRequest is the payload for deprecating a provider version.
+type DeprecateProviderVersionRequest struct {
+	Message string `json:"message"`
 }
 
 // ProviderRecord represents a registry provider record.
@@ -404,6 +567,32 @@ type UpdateTerraformMirrorRequest struct {
 	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
 	StableOnly        *bool    `json:"stable_only,omitempty"`
 	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
+}
+
+// TerraformMirrorVersionPlatform represents a platform entry for a mirrored Terraform version.
+type TerraformMirrorVersionPlatform struct {
+	OS   string `json:"os"`
+	Arch string `json:"arch"`
+	URL  string `json:"url,omitempty"`
+}
+
+// TerraformMirrorVersion represents a single mirrored Terraform/OpenTofu version.
+type TerraformMirrorVersion struct {
+	ID        string                            `json:"id"`
+	Version   string                            `json:"version"`
+	Stable    bool                              `json:"stable"`
+	SyncedAt  *string                           `json:"synced_at,omitempty"`
+	Platforms []TerraformMirrorVersionPlatform  `json:"platforms,omitempty"`
+}
+
+// TerraformMirrorHistoryEntry represents one sync history record for a mirror.
+type TerraformMirrorHistoryEntry struct {
+	ID          string  `json:"id"`
+	StartedAt   string  `json:"started_at"`
+	CompletedAt *string `json:"completed_at,omitempty"`
+	Status      string  `json:"status"`
+	Message     *string `json:"message,omitempty"`
+	VersionsNew int     `json:"versions_new"`
 }
 
 // StorageConfig represents a storage backend configuration.

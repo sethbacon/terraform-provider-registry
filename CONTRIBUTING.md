@@ -71,6 +71,11 @@ go test -v -count=1 ./internal/client/...
 
 For changes that affect provider behaviour, run the acceptance tests too:
 
+The test stack in `deployments/docker-compose.test.yml` pins the backend image to a specific
+version tag (e.g. `ghcr.io/sethbacon/terraform-registry-backend:v1.0.0`). Bump this pin in
+lockstep with backend major releases; otherwise leave it at the current pinned tag so that
+acceptance tests run against a known-good backend rather than a moving `latest`.
+
 ```bash
 # Start the test backend
 docker compose -f deployments/docker-compose.test.yml up -d

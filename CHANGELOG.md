@@ -11,6 +11,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.0] - 2026-05-05
+
+### Added
+
+- `registry_module_deprecation` — marks a module as deprecated; `message` and optional `successor_module_id`; destroy removes the deprecation (#54)
+- `registry_module_version_deprecation` — marks a specific module version as deprecated; supports `replacement_source` for Terraform CLI ≥1.10 upgrade guidance (#54)
+- `registry_provider_version_deprecation` — marks a specific provider version as deprecated (#54)
+- `registry_oidc_group_mapping` — manages a single OIDC group → organization role mapping (read-modify-write against full-replace backend endpoint) (#55)
+- `data.registry_oidc_config` — reads OIDC issuer, client_id, scopes, groups_claim, username_claim (#55)
+- `registry_storage_migration` — triggers a one-shot storage backend migration with configurable `timeout_minutes` (default 60) and progress counters; destroy cancels if still running (#58)
+- `registry_module_reanalyze` — trigger-pattern resource that re-runs terraform-docs / scanning / SCM verification on a module version; recreates when `triggers` map changes (#61)
+- `data.registry_terraform_mirror_versions` — list all mirrored Terraform/OpenTofu versions for a mirror config (#56)
+- `data.registry_terraform_mirror_version` — single version detail including available platforms (#56)
+- `data.registry_terraform_mirror_history` — sync history entries for a mirror (#56)
+- `data.registry_policy_engine_config` — reads rego bundle URL, ETag, status, and last_loaded_at (#57)
+- `data.registry_policy_evaluation` — evaluates `input_json` against the rego bundle at plan time; returns `allowed`, `reason`, `result_json` (#57)
+- `data.registry_audit_log` — fetches a single audit log entry by UUID with `metadata_json` (#59)
+- `data.registry_identity_group_mappings` — reads SAML/LDAP group → role mappings from backend runtime config (#59)
+- `data.registry_mtls_config` — reads mTLS enabled state, client CA CN, and server cert subject (#59)
+- `data.registry_advisories` — lists CVE advisories with `active_only` and `severities` filters (#60)
+- `data.registry_scanning_config` — scanner tool configuration (enabled, binary_path, detected_version, enabled_tools) (#60)
+- `data.registry_scanning_stats` — aggregate scan statistics by severity (#60)
+- `data.registry_scan` — fetches a single security scan by UUID including findings and execution_log (#60)
+- `data.registry_module_scan` — fetches the most recent scan for a specific module version (#60)
+- Provider now probes `GET /version` on configure and emits a warning diagnostic if the backend is older than the minimum supported version (`1.0.0`); opt out with `version_check = false` (#53)
+
+### Changed
+
+- `deployments/docker-compose.test.yml` backend image pinned from `latest` to `v1.0.0`; pin policy documented in CONTRIBUTING (#52)
+
+---
+
 ## [0.2.1] - 2026-05-04
 
 ### Added

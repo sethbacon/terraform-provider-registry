@@ -18,6 +18,9 @@ import (
 var _ provider.Provider = &RegistryProvider{}
 var _ provider.ProviderWithFunctions = &RegistryProvider{}
 
+// minSupportedBackendVersion is the oldest backend version the provider is known to work with.
+const minSupportedBackendVersion = "1.0.0"
+
 // RegistryProvider implements the Terraform Registry provider.
 type RegistryProvider struct {
 	version string
@@ -25,11 +28,12 @@ type RegistryProvider struct {
 
 // RegistryProviderModel holds provider-level configuration.
 type RegistryProviderModel struct {
-	Endpoint   types.String `tfsdk:"endpoint"`
-	Token      types.String `tfsdk:"token"`
-	Insecure   types.Bool   `tfsdk:"insecure"`
-	Timeout    types.Int64  `tfsdk:"timeout"`
-	MaxRetries types.Int64  `tfsdk:"max_retries"`
+	Endpoint     types.String `tfsdk:"endpoint"`
+	Token        types.String `tfsdk:"token"`
+	Insecure     types.Bool   `tfsdk:"insecure"`
+	Timeout      types.Int64  `tfsdk:"timeout"`
+	MaxRetries   types.Int64  `tfsdk:"max_retries"`
+	VersionCheck types.Bool   `tfsdk:"version_check"`
 }
 
 // New returns a provider factory function.
@@ -69,6 +73,10 @@ func (p *RegistryProvider) Schema(_ context.Context, _ provider.SchemaRequest, r
 			},
 			"max_retries": schema.Int64Attribute{
 				Description: "Maximum number of retries for failed requests (429, 5xx). Defaults to 3.",
+				Optional:    true,
+			},
+			"version_check": schema.BoolAttribute{
+				Description: "Probe the backend GET /version on configure and warn if the backend is older than the minimum supported version. Defaults to true. Set to false to disable.",
 				Optional:    true,
 			},
 		},
@@ -128,6 +136,11 @@ func (p *RegistryProvider) Configure(ctx context.Context, req provider.Configure
 		return
 	}
 
+	skipVersionCheck := !config.VersionCheck.IsNull() && !config.VersionCheck.IsUnknown() && !config.VersionCheck.ValueBool()
+	if !skipVersionCheck {
+		probeBackendVersion(ctx, c, resp)
+	}
+
 	resp.DataSourceData = c
 	resp.ResourceData = c
 }
@@ -148,6 +161,12 @@ func (p *RegistryProvider) Resources(_ context.Context) []func() resource.Resour
 		NewStorageConfigResource,
 		NewPolicyResource,
 		NewApprovalRequestResource,
+		NewModuleDeprecationResource,
+		NewModuleVersionDeprecationResource,
+		NewProviderVersionDeprecationResource,
+		NewOIDCGroupMappingResource,
+		NewStorageMigrationResource,
+		NewModuleReanalyzeResource,
 	}
 }
 
@@ -164,6 +183,20 @@ func (p *RegistryProvider) DataSources(_ context.Context) []func() datasource.Da
 		NewRoleTemplatesDataSource,
 		NewAuditLogsDataSource,
 		NewStatsDataSource,
+		NewOIDCConfigDataSource,
+		NewTerraformMirrorVersionsDataSource,
+		NewTerraformMirrorVersionDataSource,
+		NewTerraformMirrorHistoryDataSource,
+		NewPolicyEngineConfigDataSource,
+		NewPolicyEvaluationDataSource,
+		NewAuditLogDataSource,
+		NewIdentityGroupMappingsDataSource,
+		NewMTLSConfigDataSource,
+		NewAdvisoriesDataSource,
+		NewScanningConfigDataSource,
+		NewScanningStatsDataSource,
+		NewScanDataSource,
+		NewModuleScanDataSource,
 	}
 }
 
