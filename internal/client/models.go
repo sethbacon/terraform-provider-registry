@@ -1,5 +1,27 @@
 package client
 
+// StorageMigration represents a storage migration job.
+type StorageMigration struct {
+	ID              string  `json:"id"`
+	SourceConfigID  string  `json:"source_config_id"`
+	TargetConfigID  string  `json:"target_config_id"`
+	Status          string  `json:"status"`
+	ObjectsTotal    int     `json:"objects_total"`
+	ObjectsMigrated int     `json:"objects_migrated"`
+	ObjectsFailed   int     `json:"objects_failed"`
+	StartedAt       *string `json:"started_at,omitempty"`
+	CompletedAt     *string `json:"completed_at,omitempty"`
+	Error           *string `json:"error,omitempty"`
+	CreatedAt       string  `json:"created_at"`
+	UpdatedAt       string  `json:"updated_at"`
+}
+
+// CreateStorageMigrationRequest is the payload for starting a migration.
+type CreateStorageMigrationRequest struct {
+	SourceConfigID string `json:"source_config_id"`
+	TargetConfigID string `json:"target_config_id"`
+}
+
 // PolicyEngineConfig represents the rego policy engine bundle configuration.
 type PolicyEngineConfig struct {
 	BundleURL     string  `json:"bundle_url"`
