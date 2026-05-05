@@ -17,7 +17,7 @@ services:
       retries: 15
 
   backend:
-    image: ghcr.io/sethbacon/terraform-registry-backend:v1.0.0
+    image: ghcr.io/sethbacon/terraform-registry-backend:1.0.5
     environment:
       - TFR_DATABASE_HOST=postgres
       - TFR_DATABASE_PORT=5432

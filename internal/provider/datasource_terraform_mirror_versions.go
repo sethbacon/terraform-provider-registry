@@ -17,8 +17,8 @@ type TerraformMirrorVersionsDataSource struct {
 }
 
 type TerraformMirrorVersionsDataSourceModel struct {
-	MirrorID types.String                        `tfsdk:"mirror_id"`
-	Versions []TerraformMirrorVersionItemModel    `tfsdk:"versions"`
+	MirrorID types.String                      `tfsdk:"mirror_id"`
+	Versions []TerraformMirrorVersionItemModel `tfsdk:"versions"`
 }
 
 type TerraformMirrorVersionItemModel struct {
