@@ -164,6 +164,37 @@ type UpdateModuleRequest struct {
 	Source      *string `json:"source,omitempty"`
 }
 
+// ModuleVersion represents a single version of a registry module.
+type ModuleVersion struct {
+	ID                 string  `json:"id"`
+	Version            string  `json:"version"`
+	Deprecated         bool    `json:"deprecated"`
+	DeprecatedAt       *string `json:"deprecated_at,omitempty"`
+	DeprecationMessage *string `json:"deprecation_message,omitempty"`
+	ReplacementSource  *string `json:"replacement_source,omitempty"`
+}
+
+// DeprecateModuleRequest is the payload for deprecating a module or module version.
+type DeprecateModuleRequest struct {
+	Message           string  `json:"message"`
+	SuccessorModuleID *string `json:"successor_module_id,omitempty"`
+	ReplacementSource *string `json:"replacement_source,omitempty"`
+}
+
+// ProviderVersion represents a single version of a registry provider.
+type ProviderVersion struct {
+	ID                 string  `json:"id"`
+	Version            string  `json:"version"`
+	Deprecated         bool    `json:"deprecated"`
+	DeprecatedAt       *string `json:"deprecated_at,omitempty"`
+	DeprecationMessage *string `json:"deprecation_message,omitempty"`
+}
+
+// DeprecateProviderVersionRequest is the payload for deprecating a provider version.
+type DeprecateProviderVersionRequest struct {
+	Message string `json:"message"`
+}
+
 // ProviderRecord represents a registry provider record.
 type ProviderRecord struct {
 	ID             string  `json:"id"`
