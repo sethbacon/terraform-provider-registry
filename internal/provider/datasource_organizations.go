@@ -25,6 +25,8 @@ type OrganizationModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	DisplayName types.String `tfsdk:"display_name"`
+	IdpType     types.String `tfsdk:"idp_type"`
+	IdpName     types.String `tfsdk:"idp_name"`
 	CreatedAt   types.String `tfsdk:"created_at"`
 	UpdatedAt   types.String `tfsdk:"updated_at"`
 }
@@ -53,6 +55,8 @@ func (d *OrganizationsDataSource) Schema(_ context.Context, _ datasource.SchemaR
 						"id":           schema.StringAttribute{Computed: true, Description: "UUID of the organization."},
 						"name":         schema.StringAttribute{Computed: true, Description: "URL-safe namespace name."},
 						"display_name": schema.StringAttribute{Computed: true, Description: "Human-readable display name."},
+						"idp_type":     schema.StringAttribute{Computed: true, Description: "Identity-provider type binding ('oidc', 'saml', 'ldap', or null)."},
+						"idp_name":     schema.StringAttribute{Computed: true, Description: "Bound IdP name within the chosen idp_type."},
 						"created_at":   schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
 						"updated_at":   schema.StringAttribute{Computed: true, Description: "Last update timestamp."},
 					},
@@ -89,13 +93,24 @@ func (d *OrganizationsDataSource) Read(ctx context.Context, req datasource.ReadR
 
 	models := make([]OrganizationModel, len(orgs))
 	for i, o := range orgs {
-		models[i] = OrganizationModel{
+		m := OrganizationModel{
 			ID:          types.StringValue(o.ID),
 			Name:        types.StringValue(o.Name),
 			DisplayName: types.StringValue(o.DisplayName),
 			CreatedAt:   types.StringValue(o.CreatedAt),
 			UpdatedAt:   types.StringValue(o.UpdatedAt),
 		}
+		if o.IdpType != nil {
+			m.IdpType = types.StringValue(*o.IdpType)
+		} else {
+			m.IdpType = types.StringNull()
+		}
+		if o.IdpName != nil {
+			m.IdpName = types.StringValue(*o.IdpName)
+		} else {
+			m.IdpName = types.StringNull()
+		}
+		models[i] = m
 	}
 
 	config.Organizations = models

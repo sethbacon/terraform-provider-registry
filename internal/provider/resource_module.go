@@ -20,16 +20,20 @@ type ModuleResource struct {
 }
 
 type ModuleResourceModel struct {
-	ID             types.String `tfsdk:"id"`
-	OrganizationID types.String `tfsdk:"organization_id"`
-	Namespace      types.String `tfsdk:"namespace"`
-	Name           types.String `tfsdk:"name"`
-	System         types.String `tfsdk:"system"`
-	Description    types.String `tfsdk:"description"`
-	Source         types.String `tfsdk:"source"`
-	CreatedBy      types.String `tfsdk:"created_by"`
-	CreatedAt      types.String `tfsdk:"created_at"`
-	UpdatedAt      types.String `tfsdk:"updated_at"`
+	ID                 types.String `tfsdk:"id"`
+	OrganizationID     types.String `tfsdk:"organization_id"`
+	Namespace          types.String `tfsdk:"namespace"`
+	Name               types.String `tfsdk:"name"`
+	System             types.String `tfsdk:"system"`
+	Description        types.String `tfsdk:"description"`
+	Source             types.String `tfsdk:"source"`
+	CreatedBy          types.String `tfsdk:"created_by"`
+	CreatedAt          types.String `tfsdk:"created_at"`
+	UpdatedAt          types.String `tfsdk:"updated_at"`
+	Deprecated         types.Bool   `tfsdk:"deprecated"`
+	DeprecatedAt       types.String `tfsdk:"deprecated_at"`
+	DeprecationMessage types.String `tfsdk:"deprecation_message"`
+	SuccessorModuleID  types.String `tfsdk:"successor_module_id"`
 }
 
 func NewModuleResource() resource.Resource {
@@ -105,6 +109,22 @@ func (r *ModuleResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			},
 			"updated_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp when the module was last updated.",
+				Computed:    true,
+			},
+			"deprecated": schema.BoolAttribute{
+				Description: "Whether the module is currently marked deprecated. Read-only here; manage with `registry_module_deprecation`.",
+				Computed:    true,
+			},
+			"deprecated_at": schema.StringAttribute{
+				Description: "ISO 8601 timestamp when the module was deprecated, if applicable.",
+				Computed:    true,
+			},
+			"deprecation_message": schema.StringAttribute{
+				Description: "Optional message explaining why the module was deprecated.",
+				Computed:    true,
+			},
+			"successor_module_id": schema.StringAttribute{
+				Description: "UUID of the successor module that replaces this one, if specified at deprecation time.",
 				Computed:    true,
 			},
 		},
@@ -229,6 +249,7 @@ func moduleToModel(m *client.Module) ModuleResourceModel {
 		System:         types.StringValue(m.System),
 		CreatedAt:      types.StringValue(normalizeTimestamp(m.CreatedAt)),
 		UpdatedAt:      types.StringValue(normalizeTimestamp(m.UpdatedAt)),
+		Deprecated:     types.BoolValue(m.Deprecated),
 	}
 	if m.Description != nil {
 		model.Description = types.StringValue(*m.Description)
@@ -244,6 +265,21 @@ func moduleToModel(m *client.Module) ModuleResourceModel {
 		model.CreatedBy = types.StringValue(*m.CreatedBy)
 	} else {
 		model.CreatedBy = types.StringNull()
+	}
+	if m.DeprecatedAt != nil {
+		model.DeprecatedAt = types.StringValue(normalizeTimestamp(*m.DeprecatedAt))
+	} else {
+		model.DeprecatedAt = types.StringNull()
+	}
+	if m.DeprecationMessage != nil {
+		model.DeprecationMessage = types.StringValue(*m.DeprecationMessage)
+	} else {
+		model.DeprecationMessage = types.StringNull()
+	}
+	if m.SuccessorModuleID != nil {
+		model.SuccessorModuleID = types.StringValue(*m.SuccessorModuleID)
+	} else {
+		model.SuccessorModuleID = types.StringNull()
 	}
 	return model
 }

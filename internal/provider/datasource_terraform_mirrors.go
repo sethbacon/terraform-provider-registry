@@ -28,8 +28,6 @@ type TerraformMirrorDSItem struct {
 	Enabled           types.Bool   `tfsdk:"enabled"`
 	UpstreamURL       types.String `tfsdk:"upstream_url"`
 	GPGVerify         types.Bool   `tfsdk:"gpg_verify"`
-	CustomGPGKey      types.String `tfsdk:"custom_gpg_key"`
-	SkipGPGVerify     types.Bool   `tfsdk:"skip_gpg_verify"`
 	StableOnly        types.Bool   `tfsdk:"stable_only"`
 	SyncIntervalHours types.Int64  `tfsdk:"sync_interval_hours"`
 	LastSyncAt        types.String `tfsdk:"last_sync_at"`
@@ -62,8 +60,6 @@ func (d *TerraformMirrorsDataSource) Schema(_ context.Context, _ datasource.Sche
 						"enabled":             schema.BoolAttribute{Computed: true, Description: "Whether syncing is enabled."},
 						"upstream_url":        schema.StringAttribute{Computed: true, Description: "Upstream URL."},
 						"gpg_verify":          schema.BoolAttribute{Computed: true, Description: "GPG verification enabled."},
-						"custom_gpg_key":      schema.StringAttribute{Computed: true, Sensitive: true, Description: "Custom GPG public key."},
-						"skip_gpg_verify":     schema.BoolAttribute{Computed: true, Description: "Skip GPG verification."},
 						"stable_only":         schema.BoolAttribute{Computed: true, Description: "Only stable releases."},
 						"sync_interval_hours": schema.Int64Attribute{Computed: true, Description: "Sync interval in hours."},
 						"last_sync_at":        schema.StringAttribute{Computed: true, Description: "Last sync timestamp."},
@@ -111,7 +107,6 @@ func (d *TerraformMirrorsDataSource) Read(ctx context.Context, req datasource.Re
 			Enabled:           types.BoolValue(m.Enabled),
 			UpstreamURL:       types.StringValue(m.UpstreamURL),
 			GPGVerify:         types.BoolValue(m.GPGVerify),
-			SkipGPGVerify:     types.BoolValue(m.SkipGPGVerify),
 			StableOnly:        types.BoolValue(m.StableOnly),
 			SyncIntervalHours: types.Int64Value(int64(m.SyncIntervalHours)),
 			CreatedAt:         types.StringValue(m.CreatedAt),
@@ -121,11 +116,6 @@ func (d *TerraformMirrorsDataSource) Read(ctx context.Context, req datasource.Re
 			item.Description = types.StringValue(*m.Description)
 		} else {
 			item.Description = types.StringNull()
-		}
-		if m.CustomGPGKey != nil {
-			item.CustomGPGKey = types.StringValue(*m.CustomGPGKey)
-		} else {
-			item.CustomGPGKey = types.StringNull()
 		}
 		if m.LastSyncAt != nil {
 			item.LastSyncAt = types.StringValue(*m.LastSyncAt)

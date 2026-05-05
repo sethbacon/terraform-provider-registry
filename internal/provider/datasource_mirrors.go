@@ -21,17 +21,19 @@ type MirrorsDataSourceModel struct {
 }
 
 type MirrorDSItem struct {
-	ID                  types.String `tfsdk:"id"`
-	Name                types.String `tfsdk:"name"`
-	Description         types.String `tfsdk:"description"`
-	UpstreamRegistryURL types.String `tfsdk:"upstream_registry_url"`
-	OrganizationID      types.String `tfsdk:"organization_id"`
-	Enabled             types.Bool   `tfsdk:"enabled"`
-	SyncIntervalHours   types.Int64  `tfsdk:"sync_interval_hours"`
-	LastSyncAt          types.String `tfsdk:"last_sync_at"`
-	LastSyncStatus      types.String `tfsdk:"last_sync_status"`
-	CreatedAt           types.String `tfsdk:"created_at"`
-	UpdatedAt           types.String `tfsdk:"updated_at"`
+	ID                       types.String `tfsdk:"id"`
+	Name                     types.String `tfsdk:"name"`
+	Description              types.String `tfsdk:"description"`
+	UpstreamRegistryURL      types.String `tfsdk:"upstream_registry_url"`
+	OrganizationID           types.String `tfsdk:"organization_id"`
+	Enabled                  types.Bool   `tfsdk:"enabled"`
+	SyncIntervalHours        types.Int64  `tfsdk:"sync_interval_hours"`
+	PullThroughEnabled       types.Bool   `tfsdk:"pull_through_enabled"`
+	PullThroughCacheTTLHours types.Int64  `tfsdk:"pull_through_cache_ttl_hours"`
+	LastSyncAt               types.String `tfsdk:"last_sync_at"`
+	LastSyncStatus           types.String `tfsdk:"last_sync_status"`
+	CreatedAt                types.String `tfsdk:"created_at"`
+	UpdatedAt                types.String `tfsdk:"updated_at"`
 }
 
 func NewMirrorsDataSource() datasource.DataSource {
@@ -51,17 +53,19 @@ func (d *MirrorsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Computed:    true,
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
-						"id":                    schema.StringAttribute{Computed: true, Description: "UUID."},
-						"name":                  schema.StringAttribute{Computed: true, Description: "Mirror name."},
-						"description":           schema.StringAttribute{Computed: true, Description: "Description."},
-						"upstream_registry_url": schema.StringAttribute{Computed: true, Description: "Upstream registry URL."},
-						"organization_id":       schema.StringAttribute{Computed: true, Description: "Organization UUID."},
-						"enabled":               schema.BoolAttribute{Computed: true, Description: "Whether syncing is enabled."},
-						"sync_interval_hours":   schema.Int64Attribute{Computed: true, Description: "Sync interval in hours."},
-						"last_sync_at":          schema.StringAttribute{Computed: true, Description: "Last sync timestamp."},
-						"last_sync_status":      schema.StringAttribute{Computed: true, Description: "Last sync status."},
-						"created_at":            schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
-						"updated_at":            schema.StringAttribute{Computed: true, Description: "Last update timestamp."},
+						"id":                           schema.StringAttribute{Computed: true, Description: "UUID."},
+						"name":                         schema.StringAttribute{Computed: true, Description: "Mirror name."},
+						"description":                  schema.StringAttribute{Computed: true, Description: "Description."},
+						"upstream_registry_url":        schema.StringAttribute{Computed: true, Description: "Upstream registry URL."},
+						"organization_id":              schema.StringAttribute{Computed: true, Description: "Organization UUID."},
+						"enabled":                      schema.BoolAttribute{Computed: true, Description: "Whether syncing is enabled."},
+						"sync_interval_hours":          schema.Int64Attribute{Computed: true, Description: "Sync interval in hours."},
+						"pull_through_enabled":         schema.BoolAttribute{Computed: true, Description: "Whether pull-through caching is enabled."},
+						"pull_through_cache_ttl_hours": schema.Int64Attribute{Computed: true, Description: "Pull-through cache TTL in hours."},
+						"last_sync_at":                 schema.StringAttribute{Computed: true, Description: "Last sync timestamp."},
+						"last_sync_status":             schema.StringAttribute{Computed: true, Description: "Last sync status."},
+						"created_at":                   schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
+						"updated_at":                   schema.StringAttribute{Computed: true, Description: "Last update timestamp."},
 					},
 				},
 			},
@@ -97,13 +101,15 @@ func (d *MirrorsDataSource) Read(ctx context.Context, req datasource.ReadRequest
 	items := make([]MirrorDSItem, len(mirrors))
 	for i, m := range mirrors {
 		item := MirrorDSItem{
-			ID:                  types.StringValue(m.ID),
-			Name:                types.StringValue(m.Name),
-			UpstreamRegistryURL: types.StringValue(m.UpstreamRegistryURL),
-			Enabled:             types.BoolValue(m.Enabled),
-			SyncIntervalHours:   types.Int64Value(int64(m.SyncIntervalHours)),
-			CreatedAt:           types.StringValue(m.CreatedAt),
-			UpdatedAt:           types.StringValue(m.UpdatedAt),
+			ID:                       types.StringValue(m.ID),
+			Name:                     types.StringValue(m.Name),
+			UpstreamRegistryURL:      types.StringValue(m.UpstreamRegistryURL),
+			Enabled:                  types.BoolValue(m.Enabled),
+			SyncIntervalHours:        types.Int64Value(int64(m.SyncIntervalHours)),
+			PullThroughEnabled:       types.BoolValue(m.PullThroughEnabled),
+			PullThroughCacheTTLHours: types.Int64Value(int64(m.PullThroughCacheTTLHours)),
+			CreatedAt:                types.StringValue(m.CreatedAt),
+			UpdatedAt:                types.StringValue(m.UpdatedAt),
 		}
 		if m.Description != nil {
 			item.Description = types.StringValue(*m.Description)

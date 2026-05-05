@@ -22,21 +22,23 @@ type MirrorResource struct {
 }
 
 type MirrorResourceModel struct {
-	ID                  types.String `tfsdk:"id"`
-	Name                types.String `tfsdk:"name"`
-	Description         types.String `tfsdk:"description"`
-	UpstreamRegistryURL types.String `tfsdk:"upstream_registry_url"`
-	OrganizationID      types.String `tfsdk:"organization_id"`
-	NamespaceFilter     types.List   `tfsdk:"namespace_filter"`
-	ProviderFilter      types.List   `tfsdk:"provider_filter"`
-	VersionFilter       types.String `tfsdk:"version_filter"`
-	PlatformFilter      types.List   `tfsdk:"platform_filter"`
-	Enabled             types.Bool   `tfsdk:"enabled"`
-	SyncIntervalHours   types.Int64  `tfsdk:"sync_interval_hours"`
-	LastSyncAt          types.String `tfsdk:"last_sync_at"`
-	LastSyncStatus      types.String `tfsdk:"last_sync_status"`
-	CreatedAt           types.String `tfsdk:"created_at"`
-	UpdatedAt           types.String `tfsdk:"updated_at"`
+	ID                       types.String `tfsdk:"id"`
+	Name                     types.String `tfsdk:"name"`
+	Description              types.String `tfsdk:"description"`
+	UpstreamRegistryURL      types.String `tfsdk:"upstream_registry_url"`
+	OrganizationID           types.String `tfsdk:"organization_id"`
+	NamespaceFilter          types.List   `tfsdk:"namespace_filter"`
+	ProviderFilter           types.List   `tfsdk:"provider_filter"`
+	VersionFilter            types.String `tfsdk:"version_filter"`
+	PlatformFilter           types.List   `tfsdk:"platform_filter"`
+	Enabled                  types.Bool   `tfsdk:"enabled"`
+	SyncIntervalHours        types.Int64  `tfsdk:"sync_interval_hours"`
+	PullThroughEnabled       types.Bool   `tfsdk:"pull_through_enabled"`
+	PullThroughCacheTTLHours types.Int64  `tfsdk:"pull_through_cache_ttl_hours"`
+	LastSyncAt               types.String `tfsdk:"last_sync_at"`
+	LastSyncStatus           types.String `tfsdk:"last_sync_status"`
+	CreatedAt                types.String `tfsdk:"created_at"`
+	UpdatedAt                types.String `tfsdk:"updated_at"`
 }
 
 func NewMirrorResource() resource.Resource {
@@ -111,6 +113,18 @@ func (r *MirrorResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Computed:    true,
 				Default:     int64default.StaticInt64(24),
 			},
+			"pull_through_enabled": schema.BoolAttribute{
+				Description: "Whether to fetch missing providers on demand from the upstream registry, in addition to the periodic sync. Defaults to false.",
+				Optional:    true,
+				Computed:    true,
+				Default:     booldefault.StaticBool(false),
+			},
+			"pull_through_cache_ttl_hours": schema.Int64Attribute{
+				Description: "How long to cache pull-through entries before re-checking upstream. Defaults to 24 hours.",
+				Optional:    true,
+				Computed:    true,
+				Default:     int64default.StaticInt64(24),
+			},
 			"last_sync_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp of last sync.",
 				Computed:    true,
@@ -164,6 +178,14 @@ func (r *MirrorResource) Create(ctx context.Context, req resource.CreateRequest,
 	if !plan.SyncIntervalHours.IsNull() && !plan.SyncIntervalHours.IsUnknown() {
 		v := int(plan.SyncIntervalHours.ValueInt64())
 		createReq.SyncIntervalHours = &v
+	}
+	if !plan.PullThroughEnabled.IsNull() && !plan.PullThroughEnabled.IsUnknown() {
+		v := plan.PullThroughEnabled.ValueBool()
+		createReq.PullThroughEnabled = &v
+	}
+	if !plan.PullThroughCacheTTLHours.IsNull() && !plan.PullThroughCacheTTLHours.IsUnknown() {
+		v := int(plan.PullThroughCacheTTLHours.ValueInt64())
+		createReq.PullThroughCacheTTLHours = &v
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
@@ -240,6 +262,14 @@ func (r *MirrorResource) Update(ctx context.Context, req resource.UpdateRequest,
 		v := int(plan.SyncIntervalHours.ValueInt64())
 		updateReq.SyncIntervalHours = &v
 	}
+	if !plan.PullThroughEnabled.IsNull() && !plan.PullThroughEnabled.IsUnknown() {
+		v := plan.PullThroughEnabled.ValueBool()
+		updateReq.PullThroughEnabled = &v
+	}
+	if !plan.PullThroughCacheTTLHours.IsNull() && !plan.PullThroughCacheTTLHours.IsUnknown() {
+		v := int(plan.PullThroughCacheTTLHours.ValueInt64())
+		updateReq.PullThroughCacheTTLHours = &v
+	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
 		updateReq.Description = &v
@@ -313,16 +343,18 @@ func mirrorToModel(ctx context.Context, m *client.Mirror) MirrorResourceModel {
 	platList, _ := types.ListValueFrom(ctx, types.StringType, plf)
 
 	model := MirrorResourceModel{
-		ID:                  types.StringValue(m.ID),
-		Name:                types.StringValue(m.Name),
-		UpstreamRegistryURL: types.StringValue(m.UpstreamRegistryURL),
-		Enabled:             types.BoolValue(m.Enabled),
-		SyncIntervalHours:   types.Int64Value(int64(m.SyncIntervalHours)),
-		NamespaceFilter:     nsList,
-		ProviderFilter:      provList,
-		PlatformFilter:      platList,
-		CreatedAt:           types.StringValue(normalizeTimestamp(m.CreatedAt)),
-		UpdatedAt:           types.StringValue(normalizeTimestamp(m.UpdatedAt)),
+		ID:                       types.StringValue(m.ID),
+		Name:                     types.StringValue(m.Name),
+		UpstreamRegistryURL:      types.StringValue(m.UpstreamRegistryURL),
+		Enabled:                  types.BoolValue(m.Enabled),
+		SyncIntervalHours:        types.Int64Value(int64(m.SyncIntervalHours)),
+		PullThroughEnabled:       types.BoolValue(m.PullThroughEnabled),
+		PullThroughCacheTTLHours: types.Int64Value(int64(m.PullThroughCacheTTLHours)),
+		NamespaceFilter:          nsList,
+		ProviderFilter:           provList,
+		PlatformFilter:           platList,
+		CreatedAt:                types.StringValue(normalizeTimestamp(m.CreatedAt)),
+		UpdatedAt:                types.StringValue(normalizeTimestamp(m.UpdatedAt)),
 	}
 	if m.Description != nil {
 		model.Description = types.StringValue(*m.Description)

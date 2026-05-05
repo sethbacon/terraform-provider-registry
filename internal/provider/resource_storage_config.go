@@ -22,17 +22,13 @@ type StorageConfigResource struct {
 }
 
 type StorageConfigResourceModel struct {
-	ID                    types.String `tfsdk:"id"`
-	Backend               types.String `tfsdk:"backend"`
-	Config                types.Map    `tfsdk:"config"`
-	Active                types.Bool   `tfsdk:"active"`
-	Activate              types.Bool   `tfsdk:"activate"`
-	AzureAccountKeySet    types.Bool   `tfsdk:"azure_account_key_set"`
-	S3AccessKeyIDSet      types.Bool   `tfsdk:"s3_access_key_id_set"`
-	S3SecretAccessKeySet  types.Bool   `tfsdk:"s3_secret_access_key_set"`
-	GCSCredentialsJSONSet types.Bool   `tfsdk:"gcs_credentials_json_set"`
-	CreatedAt             types.String `tfsdk:"created_at"`
-	UpdatedAt             types.String `tfsdk:"updated_at"`
+	ID        types.String `tfsdk:"id"`
+	Backend   types.String `tfsdk:"backend"`
+	Config    types.Map    `tfsdk:"config"`
+	Active    types.Bool   `tfsdk:"active"`
+	Activate  types.Bool   `tfsdk:"activate"`
+	CreatedAt types.String `tfsdk:"created_at"`
+	UpdatedAt types.String `tfsdk:"updated_at"`
 }
 
 func NewStorageConfigResource() resource.Resource {
@@ -76,22 +72,6 @@ func (r *StorageConfigResource) Schema(_ context.Context, _ resource.SchemaReque
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},
-			},
-			"azure_account_key_set": schema.BoolAttribute{
-				Description: "Indicates whether an Azure account key is configured (key value is write-only).",
-				Computed:    true,
-			},
-			"s3_access_key_id_set": schema.BoolAttribute{
-				Description: "Indicates whether an S3 access key ID is configured.",
-				Computed:    true,
-			},
-			"s3_secret_access_key_set": schema.BoolAttribute{
-				Description: "Indicates whether an S3 secret access key is configured.",
-				Computed:    true,
-			},
-			"gcs_credentials_json_set": schema.BoolAttribute{
-				Description: "Indicates whether GCS credentials JSON is configured (value is write-only).",
-				Computed:    true,
 			},
 			"created_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp when the config was created.",
@@ -263,14 +243,6 @@ func buildStorageCreateRequest(backend string, config map[string]string) client.
 			req.S3AccessKeyID = v
 		case "s3_secret_access_key":
 			req.S3SecretAccessKey = v
-		case "s3_role_arn":
-			req.S3RoleARN = v
-		case "s3_role_session_name":
-			req.S3RoleSessionName = v
-		case "s3_external_id":
-			req.S3ExternalID = v
-		case "s3_web_identity_token_file":
-			req.S3WebIdentityTokenFile = v
 		case "gcs_bucket":
 			req.GCSBucket = v
 		case "gcs_project_id":
@@ -314,14 +286,6 @@ func buildStorageUpdateRequest(backend string, config map[string]string) client.
 			req.S3AccessKeyID = v
 		case "s3_secret_access_key":
 			req.S3SecretAccessKey = v
-		case "s3_role_arn":
-			req.S3RoleARN = v
-		case "s3_role_session_name":
-			req.S3RoleSessionName = v
-		case "s3_external_id":
-			req.S3ExternalID = v
-		case "s3_web_identity_token_file":
-			req.S3WebIdentityTokenFile = v
 		case "gcs_bucket":
 			req.GCSBucket = v
 		case "gcs_project_id":
@@ -348,15 +312,11 @@ func storageConfigToModel(ctx context.Context, sc *client.StorageConfig, preserv
 
 	cfgValue, _ := types.MapValueFrom(ctx, types.StringType, configMap)
 	return StorageConfigResourceModel{
-		ID:                    types.StringValue(sc.ID),
-		Backend:               types.StringValue(sc.BackendType),
-		Config:                cfgValue,
-		Active:                types.BoolValue(sc.IsActive),
-		AzureAccountKeySet:    types.BoolValue(sc.AzureAccountKeySet),
-		S3AccessKeyIDSet:      types.BoolValue(sc.S3AccessKeyIDSet),
-		S3SecretAccessKeySet:  types.BoolValue(sc.S3SecretAccessKeySet),
-		GCSCredentialsJSONSet: types.BoolValue(sc.GCSCredentialsJSONSet),
-		CreatedAt:             types.StringValue(normalizeTimestamp(sc.CreatedAt)),
-		UpdatedAt:             types.StringValue(normalizeTimestamp(sc.UpdatedAt)),
+		ID:        types.StringValue(sc.ID),
+		Backend:   types.StringValue(sc.BackendType),
+		Config:    cfgValue,
+		Active:    types.BoolValue(sc.IsActive),
+		CreatedAt: types.StringValue(normalizeTimestamp(sc.CreatedAt)),
+		UpdatedAt: types.StringValue(normalizeTimestamp(sc.UpdatedAt)),
 	}
 }

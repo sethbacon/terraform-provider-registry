@@ -26,16 +26,12 @@ type PolicyResourceModel struct {
 	Name             types.String `tfsdk:"name"`
 	Description      types.String `tfsdk:"description"`
 	PolicyType       types.String `tfsdk:"policy_type"`
-	OrganizationID   types.String `tfsdk:"organization_id"`
-	OrganizationName types.String `tfsdk:"organization_name"`
 	UpstreamRegistry types.String `tfsdk:"upstream_registry"`
 	NamespacePattern types.String `tfsdk:"namespace_pattern"`
 	ProviderPattern  types.String `tfsdk:"provider_pattern"`
 	Priority         types.Int64  `tfsdk:"priority"`
 	IsActive         types.Bool   `tfsdk:"is_active"`
 	RequiresApproval types.Bool   `tfsdk:"requires_approval"`
-	CreatedBy        types.String `tfsdk:"created_by"`
-	CreatedByName    types.String `tfsdk:"created_by_name"`
 	CreatedAt        types.String `tfsdk:"created_at"`
 	UpdatedAt        types.String `tfsdk:"updated_at"`
 }
@@ -72,15 +68,6 @@ func (r *PolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Description: "Policy type: 'allow' or 'deny'.",
 				Required:    true,
 			},
-			"organization_id": schema.StringAttribute{
-				Description: "UUID of the organization this policy is scoped to. Null means a global policy.",
-				Optional:    true,
-				Computed:    true,
-			},
-			"organization_name": schema.StringAttribute{
-				Description: "Name of the scoped organization (read-only).",
-				Computed:    true,
-			},
 			"upstream_registry": schema.StringAttribute{
 				Description: "Upstream registry URL to match.",
 				Optional:    true,
@@ -113,20 +100,6 @@ func (r *PolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
-			},
-			"created_by": schema.StringAttribute{
-				Description: "UUID of the user who created this policy (read-only).",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
-			"created_by_name": schema.StringAttribute{
-				Description: "Name of the user who created this policy (read-only).",
-				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"created_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp when the policy was created.",
@@ -168,10 +141,6 @@ func (r *PolicyResource) Create(ctx context.Context, req resource.CreateRequest,
 		Priority:         int(plan.Priority.ValueInt64()),
 		IsActive:         plan.IsActive.ValueBool(),
 		RequiresApproval: plan.RequiresApproval.ValueBool(),
-	}
-	if !plan.OrganizationID.IsNull() && !plan.OrganizationID.IsUnknown() {
-		v := plan.OrganizationID.ValueString()
-		createReq.OrganizationID = &v
 	}
 	if !plan.Description.IsNull() && !plan.Description.IsUnknown() {
 		v := plan.Description.ValueString()
@@ -296,16 +265,6 @@ func policyToModel(p *client.Policy) PolicyResourceModel {
 	} else {
 		model.Description = types.StringNull()
 	}
-	if p.OrganizationID != nil {
-		model.OrganizationID = types.StringValue(*p.OrganizationID)
-	} else {
-		model.OrganizationID = types.StringNull()
-	}
-	if p.OrganizationName != nil {
-		model.OrganizationName = types.StringValue(*p.OrganizationName)
-	} else {
-		model.OrganizationName = types.StringNull()
-	}
 	if p.UpstreamRegistry != nil {
 		model.UpstreamRegistry = types.StringValue(*p.UpstreamRegistry)
 	} else {
@@ -320,16 +279,6 @@ func policyToModel(p *client.Policy) PolicyResourceModel {
 		model.ProviderPattern = types.StringValue(*p.ProviderPattern)
 	} else {
 		model.ProviderPattern = types.StringNull()
-	}
-	if p.CreatedBy != nil {
-		model.CreatedBy = types.StringValue(*p.CreatedBy)
-	} else {
-		model.CreatedBy = types.StringNull()
-	}
-	if p.CreatedByName != nil {
-		model.CreatedByName = types.StringValue(*p.CreatedByName)
-	} else {
-		model.CreatedByName = types.StringNull()
 	}
 	return model
 }

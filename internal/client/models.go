@@ -25,24 +25,33 @@ type UpdateUserRequest struct {
 }
 
 // Organization represents a registry organization.
+//
+// Mirrors backend models.Organization. IdpType / IdpName bind the org to a
+// specific IdP and are nullable; null means no restriction.
 type Organization struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	DisplayName string  `json:"display_name"`
+	IdpType     *string `json:"idp_type,omitempty"`
+	IdpName     *string `json:"idp_name,omitempty"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
 }
 
 // CreateOrganizationRequest is the payload for creating an organization.
 type CreateOrganizationRequest struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
+	Name        string  `json:"name"`
+	DisplayName string  `json:"display_name"`
+	IdpType     *string `json:"idp_type,omitempty"`
+	IdpName     *string `json:"idp_name,omitempty"`
 }
 
 // UpdateOrganizationRequest is the payload for updating an organization.
 type UpdateOrganizationRequest struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
+	Name        string  `json:"name"`
+	DisplayName string  `json:"display_name"`
+	IdpType     *string `json:"idp_type,omitempty"`
+	IdpName     *string `json:"idp_name,omitempty"`
 }
 
 // OrganizationMember represents a user's membership in an organization.
@@ -115,18 +124,28 @@ type UpdateAPIKeyRequest struct {
 }
 
 // Module represents a registry module record.
+//
+// Mirrors backend models.Module. The deprecation fields (Deprecated,
+// DeprecatedAt, DeprecationMessage, SuccessorModuleID) reflect module-level
+// deprecation set via POST /api/v1/modules/{ns}/{name}/{sys}/deprecate. They
+// are read-only here; managing the deprecation lifecycle is the job of a
+// dedicated registry_module_deprecation resource (tracked separately).
 type Module struct {
-	ID             string  `json:"id"`
-	OrganizationID string  `json:"organization_id"`
-	Namespace      string  `json:"namespace"`
-	Name           string  `json:"name"`
-	System         string  `json:"system"`
-	Description    *string `json:"description,omitempty"`
-	Source         *string `json:"source,omitempty"`
-	CreatedBy      *string `json:"created_by,omitempty"`
-	CreatedByName  *string `json:"created_by_name,omitempty"`
-	CreatedAt      string  `json:"created_at"`
-	UpdatedAt      string  `json:"updated_at"`
+	ID                 string  `json:"id"`
+	OrganizationID     string  `json:"organization_id"`
+	Namespace          string  `json:"namespace"`
+	Name               string  `json:"name"`
+	System             string  `json:"system"`
+	Description        *string `json:"description,omitempty"`
+	Source             *string `json:"source,omitempty"`
+	CreatedBy          *string `json:"created_by,omitempty"`
+	CreatedByName      *string `json:"created_by_name,omitempty"`
+	CreatedAt          string  `json:"created_at"`
+	UpdatedAt          string  `json:"updated_at"`
+	Deprecated         bool    `json:"deprecated"`
+	DeprecatedAt       *string `json:"deprecated_at,omitempty"`
+	DeprecationMessage *string `json:"deprecation_message,omitempty"`
+	SuccessorModuleID  *string `json:"successor_module_id,omitempty"`
 }
 
 // CreateModuleRequest is the payload for creating a module record.
@@ -266,23 +285,25 @@ type UpdateModuleSCMLinkRequest struct {
 
 // Mirror represents a provider mirror configuration.
 type Mirror struct {
-	ID                  string   `json:"id"`
-	Name                string   `json:"name"`
-	Description         *string  `json:"description,omitempty"`
-	UpstreamRegistryURL string   `json:"upstream_registry_url"`
-	OrganizationID      *string  `json:"organization_id,omitempty"`
-	NamespaceFilter     []string `json:"namespace_filter,omitempty"`
-	ProviderFilter      []string `json:"provider_filter,omitempty"`
-	VersionFilter       *string  `json:"version_filter,omitempty"`
-	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             bool     `json:"enabled"`
-	SyncIntervalHours   int      `json:"sync_interval_hours"`
-	LastSyncAt          *string  `json:"last_sync_at,omitempty"`
-	LastSyncStatus      *string  `json:"last_sync_status,omitempty"`
-	LastSyncError       *string  `json:"last_sync_error,omitempty"`
-	CreatedAt           string   `json:"created_at"`
-	UpdatedAt           string   `json:"updated_at"`
-	CreatedBy           *string  `json:"created_by,omitempty"`
+	ID                       string   `json:"id"`
+	Name                     string   `json:"name"`
+	Description              *string  `json:"description,omitempty"`
+	UpstreamRegistryURL      string   `json:"upstream_registry_url"`
+	OrganizationID           *string  `json:"organization_id,omitempty"`
+	NamespaceFilter          []string `json:"namespace_filter,omitempty"`
+	ProviderFilter           []string `json:"provider_filter,omitempty"`
+	VersionFilter            *string  `json:"version_filter,omitempty"`
+	PlatformFilter           []string `json:"platform_filter,omitempty"`
+	Enabled                  bool     `json:"enabled"`
+	SyncIntervalHours        int      `json:"sync_interval_hours"`
+	PullThroughEnabled       bool     `json:"pull_through_enabled"`
+	PullThroughCacheTTLHours int      `json:"pull_through_cache_ttl_hours"`
+	LastSyncAt               *string  `json:"last_sync_at,omitempty"`
+	LastSyncStatus           *string  `json:"last_sync_status,omitempty"`
+	LastSyncError            *string  `json:"last_sync_error,omitempty"`
+	CreatedAt                string   `json:"created_at"`
+	UpdatedAt                string   `json:"updated_at"`
+	CreatedBy                *string  `json:"created_by,omitempty"`
 }
 
 // CreateMirrorRequest is the payload for creating a mirror.
@@ -292,16 +313,18 @@ type Mirror struct {
 // CreateMirrorConfigRequest semantics in
 // backend/internal/db/models/mirror.go.
 type CreateMirrorRequest struct {
-	Name                string   `json:"name"`
-	Description         *string  `json:"description,omitempty"`
-	UpstreamRegistryURL string   `json:"upstream_registry_url"`
-	OrganizationID      *string  `json:"organization_id,omitempty"`
-	NamespaceFilter     []string `json:"namespace_filter,omitempty"`
-	ProviderFilter      []string `json:"provider_filter,omitempty"`
-	VersionFilter       *string  `json:"version_filter,omitempty"`
-	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             *bool    `json:"enabled,omitempty"`
-	SyncIntervalHours   *int     `json:"sync_interval_hours,omitempty"`
+	Name                     string   `json:"name"`
+	Description              *string  `json:"description,omitempty"`
+	UpstreamRegistryURL      string   `json:"upstream_registry_url"`
+	OrganizationID           *string  `json:"organization_id,omitempty"`
+	NamespaceFilter          []string `json:"namespace_filter,omitempty"`
+	ProviderFilter           []string `json:"provider_filter,omitempty"`
+	VersionFilter            *string  `json:"version_filter,omitempty"`
+	PlatformFilter           []string `json:"platform_filter,omitempty"`
+	Enabled                  *bool    `json:"enabled,omitempty"`
+	SyncIntervalHours        *int     `json:"sync_interval_hours,omitempty"`
+	PullThroughEnabled       *bool    `json:"pull_through_enabled,omitempty"`
+	PullThroughCacheTTLHours *int     `json:"pull_through_cache_ttl_hours,omitempty"`
 }
 
 // UpdateMirrorRequest is the payload for updating a mirror.
@@ -312,16 +335,18 @@ type CreateMirrorRequest struct {
 // bool/int zero values would silently disable the mirror or reset its sync
 // interval to zero.
 type UpdateMirrorRequest struct {
-	Name                *string  `json:"name,omitempty"`
-	Description         *string  `json:"description,omitempty"`
-	UpstreamRegistryURL *string  `json:"upstream_registry_url,omitempty"`
-	OrganizationID      *string  `json:"organization_id,omitempty"`
-	NamespaceFilter     []string `json:"namespace_filter,omitempty"`
-	ProviderFilter      []string `json:"provider_filter,omitempty"`
-	VersionFilter       *string  `json:"version_filter,omitempty"`
-	PlatformFilter      []string `json:"platform_filter,omitempty"`
-	Enabled             *bool    `json:"enabled,omitempty"`
-	SyncIntervalHours   *int     `json:"sync_interval_hours,omitempty"`
+	Name                     *string  `json:"name,omitempty"`
+	Description              *string  `json:"description,omitempty"`
+	UpstreamRegistryURL      *string  `json:"upstream_registry_url,omitempty"`
+	OrganizationID           *string  `json:"organization_id,omitempty"`
+	NamespaceFilter          []string `json:"namespace_filter,omitempty"`
+	ProviderFilter           []string `json:"provider_filter,omitempty"`
+	VersionFilter            *string  `json:"version_filter,omitempty"`
+	PlatformFilter           []string `json:"platform_filter,omitempty"`
+	Enabled                  *bool    `json:"enabled,omitempty"`
+	SyncIntervalHours        *int     `json:"sync_interval_hours,omitempty"`
+	PullThroughEnabled       *bool    `json:"pull_through_enabled,omitempty"`
+	PullThroughCacheTTLHours *int     `json:"pull_through_cache_ttl_hours,omitempty"`
 }
 
 // TerraformMirror represents a Terraform binary mirror configuration.
@@ -337,8 +362,6 @@ type TerraformMirror struct {
 	GPGVerify         bool     `json:"gpg_verify"`
 	StableOnly        bool     `json:"stable_only"`
 	SyncIntervalHours int      `json:"sync_interval_hours"`
-	CustomGPGKey      *string  `json:"custom_gpg_key,omitempty"`
-	SkipGPGVerify     bool     `json:"skip_gpg_verify"`
 	LastSyncAt        *string  `json:"last_sync_at,omitempty"`
 	LastSyncStatus    *string  `json:"last_sync_status,omitempty"`
 	LastSyncError     *string  `json:"last_sync_error,omitempty"`
@@ -362,8 +385,6 @@ type CreateTerraformMirrorRequest struct {
 	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
 	StableOnly        *bool    `json:"stable_only,omitempty"`
 	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
-	CustomGPGKey      *string  `json:"custom_gpg_key,omitempty"`
-	SkipGPGVerify     *bool    `json:"skip_gpg_verify,omitempty"`
 }
 
 // UpdateTerraformMirrorRequest is the payload for updating a Terraform mirror.
@@ -383,8 +404,6 @@ type UpdateTerraformMirrorRequest struct {
 	GPGVerify         *bool    `json:"gpg_verify,omitempty"`
 	StableOnly        *bool    `json:"stable_only,omitempty"`
 	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
-	CustomGPGKey      *string  `json:"custom_gpg_key,omitempty"`
-	SkipGPGVerify     *bool    `json:"skip_gpg_verify,omitempty"`
 }
 
 // StorageConfig represents a storage backend configuration.
@@ -395,80 +414,61 @@ type StorageConfig struct {
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
 	// Individual backend fields returned by API (credentials redacted)
-	LocalBasePath          *string `json:"local_base_path,omitempty"`
-	LocalServeDirectly     *bool   `json:"local_serve_directly,omitempty"`
-	AzureAccountName       *string `json:"azure_account_name,omitempty"`
-	AzureContainerName     *string `json:"azure_container_name,omitempty"`
-	AzureAccountKeySet     bool    `json:"azure_account_key_set"`
-	S3Region               *string `json:"s3_region,omitempty"`
-	S3Bucket               *string `json:"s3_bucket,omitempty"`
-	S3Endpoint             *string `json:"s3_endpoint,omitempty"`
-	S3AuthMethod           *string `json:"s3_auth_method,omitempty"`
-	S3RoleARN              *string `json:"s3_role_arn,omitempty"`
-	S3RoleSessionName      *string `json:"s3_role_session_name,omitempty"`
-	S3ExternalID           *string `json:"s3_external_id,omitempty"`
-	S3WebIdentityTokenFile *string `json:"s3_web_identity_token_file,omitempty"`
-	S3AccessKeyIDSet       bool    `json:"s3_access_key_id_set"`
-	S3SecretAccessKeySet   bool    `json:"s3_secret_access_key_set"`
-	GCSBucket              *string `json:"gcs_bucket,omitempty"`
-	GCSProjectID           *string `json:"gcs_project_id,omitempty"`
-	GCSAuthMethod          *string `json:"gcs_auth_method,omitempty"`
-	GCSCredentialsJSONSet  bool    `json:"gcs_credentials_json_set"`
+	LocalBasePath      *string `json:"local_base_path,omitempty"`
+	LocalServeDirectly *bool   `json:"local_serve_directly,omitempty"`
+	AzureAccountName   *string `json:"azure_account_name,omitempty"`
+	AzureContainerName *string `json:"azure_container_name,omitempty"`
+	S3Region           *string `json:"s3_region,omitempty"`
+	S3Bucket           *string `json:"s3_bucket,omitempty"`
+	S3Endpoint         *string `json:"s3_endpoint,omitempty"`
+	GCSBucket          *string `json:"gcs_bucket,omitempty"`
+	GCSProjectID       *string `json:"gcs_project_id,omitempty"`
 }
 
 // CreateStorageConfigRequest is the payload for creating a storage config.
 type CreateStorageConfigRequest struct {
-	BackendType            string `json:"backend_type"`
-	Activate               bool   `json:"activate,omitempty"`
-	LocalBasePath          string `json:"local_base_path,omitempty"`
-	LocalServeDirectly     *bool  `json:"local_serve_directly,omitempty"`
-	AzureAccountName       string `json:"azure_account_name,omitempty"`
-	AzureAccountKey        string `json:"azure_account_key,omitempty"`
-	AzureContainerName     string `json:"azure_container_name,omitempty"`
-	AzureCDNURL            string `json:"azure_cdn_url,omitempty"`
-	S3Endpoint             string `json:"s3_endpoint,omitempty"`
-	S3Region               string `json:"s3_region,omitempty"`
-	S3Bucket               string `json:"s3_bucket,omitempty"`
-	S3AuthMethod           string `json:"s3_auth_method,omitempty"`
-	S3AccessKeyID          string `json:"s3_access_key_id,omitempty"`
-	S3SecretAccessKey      string `json:"s3_secret_access_key,omitempty"`
-	S3RoleARN              string `json:"s3_role_arn,omitempty"`
-	S3RoleSessionName      string `json:"s3_role_session_name,omitempty"`
-	S3ExternalID           string `json:"s3_external_id,omitempty"`
-	S3WebIdentityTokenFile string `json:"s3_web_identity_token_file,omitempty"`
-	GCSBucket              string `json:"gcs_bucket,omitempty"`
-	GCSProjectID           string `json:"gcs_project_id,omitempty"`
-	GCSAuthMethod          string `json:"gcs_auth_method,omitempty"`
-	GCSCredentialsFile     string `json:"gcs_credentials_file,omitempty"`
-	GCSCredentialsJSON     string `json:"gcs_credentials_json,omitempty"`
-	GCSEndpoint            string `json:"gcs_endpoint,omitempty"`
+	BackendType        string `json:"backend_type"`
+	LocalBasePath      string `json:"local_base_path,omitempty"`
+	LocalServeDirectly *bool  `json:"local_serve_directly,omitempty"`
+	AzureAccountName   string `json:"azure_account_name,omitempty"`
+	AzureAccountKey    string `json:"azure_account_key,omitempty"`
+	AzureContainerName string `json:"azure_container_name,omitempty"`
+	AzureCDNURL        string `json:"azure_cdn_url,omitempty"`
+	S3Endpoint         string `json:"s3_endpoint,omitempty"`
+	S3Region           string `json:"s3_region,omitempty"`
+	S3Bucket           string `json:"s3_bucket,omitempty"`
+	S3AuthMethod       string `json:"s3_auth_method,omitempty"`
+	S3AccessKeyID      string `json:"s3_access_key_id,omitempty"`
+	S3SecretAccessKey  string `json:"s3_secret_access_key,omitempty"`
+	GCSBucket          string `json:"gcs_bucket,omitempty"`
+	GCSProjectID       string `json:"gcs_project_id,omitempty"`
+	GCSAuthMethod      string `json:"gcs_auth_method,omitempty"`
+	GCSCredentialsFile string `json:"gcs_credentials_file,omitempty"`
+	GCSCredentialsJSON string `json:"gcs_credentials_json,omitempty"`
+	GCSEndpoint        string `json:"gcs_endpoint,omitempty"`
 }
 
 // UpdateStorageConfigRequest is the payload for updating a storage config.
 type UpdateStorageConfigRequest struct {
-	BackendType            string `json:"backend_type"`
-	LocalBasePath          string `json:"local_base_path,omitempty"`
-	LocalServeDirectly     *bool  `json:"local_serve_directly,omitempty"`
-	AzureAccountName       string `json:"azure_account_name,omitempty"`
-	AzureAccountKey        string `json:"azure_account_key,omitempty"`
-	AzureContainerName     string `json:"azure_container_name,omitempty"`
-	AzureCDNURL            string `json:"azure_cdn_url,omitempty"`
-	S3Endpoint             string `json:"s3_endpoint,omitempty"`
-	S3Region               string `json:"s3_region,omitempty"`
-	S3Bucket               string `json:"s3_bucket,omitempty"`
-	S3AuthMethod           string `json:"s3_auth_method,omitempty"`
-	S3AccessKeyID          string `json:"s3_access_key_id,omitempty"`
-	S3SecretAccessKey      string `json:"s3_secret_access_key,omitempty"`
-	S3RoleARN              string `json:"s3_role_arn,omitempty"`
-	S3RoleSessionName      string `json:"s3_role_session_name,omitempty"`
-	S3ExternalID           string `json:"s3_external_id,omitempty"`
-	S3WebIdentityTokenFile string `json:"s3_web_identity_token_file,omitempty"`
-	GCSBucket              string `json:"gcs_bucket,omitempty"`
-	GCSProjectID           string `json:"gcs_project_id,omitempty"`
-	GCSAuthMethod          string `json:"gcs_auth_method,omitempty"`
-	GCSCredentialsFile     string `json:"gcs_credentials_file,omitempty"`
-	GCSCredentialsJSON     string `json:"gcs_credentials_json,omitempty"`
-	GCSEndpoint            string `json:"gcs_endpoint,omitempty"`
+	BackendType        string `json:"backend_type"`
+	LocalBasePath      string `json:"local_base_path,omitempty"`
+	LocalServeDirectly *bool  `json:"local_serve_directly,omitempty"`
+	AzureAccountName   string `json:"azure_account_name,omitempty"`
+	AzureAccountKey    string `json:"azure_account_key,omitempty"`
+	AzureContainerName string `json:"azure_container_name,omitempty"`
+	AzureCDNURL        string `json:"azure_cdn_url,omitempty"`
+	S3Endpoint         string `json:"s3_endpoint,omitempty"`
+	S3Region           string `json:"s3_region,omitempty"`
+	S3Bucket           string `json:"s3_bucket,omitempty"`
+	S3AuthMethod       string `json:"s3_auth_method,omitempty"`
+	S3AccessKeyID      string `json:"s3_access_key_id,omitempty"`
+	S3SecretAccessKey  string `json:"s3_secret_access_key,omitempty"`
+	GCSBucket          string `json:"gcs_bucket,omitempty"`
+	GCSProjectID       string `json:"gcs_project_id,omitempty"`
+	GCSAuthMethod      string `json:"gcs_auth_method,omitempty"`
+	GCSCredentialsFile string `json:"gcs_credentials_file,omitempty"`
+	GCSCredentialsJSON string `json:"gcs_credentials_json,omitempty"`
+	GCSEndpoint        string `json:"gcs_endpoint,omitempty"`
 }
 
 // RoleTemplate represents an RBAC role template.
@@ -505,16 +505,12 @@ type Policy struct {
 	Name             string  `json:"name"`
 	Description      *string `json:"description,omitempty"`
 	PolicyType       string  `json:"policy_type"`
-	OrganizationID   *string `json:"organization_id,omitempty"`
-	OrganizationName *string `json:"organization_name,omitempty"`
 	UpstreamRegistry *string `json:"upstream_registry,omitempty"`
 	NamespacePattern *string `json:"namespace_pattern,omitempty"`
 	ProviderPattern  *string `json:"provider_pattern,omitempty"`
 	Priority         int     `json:"priority"`
 	IsActive         bool    `json:"is_active"`
 	RequiresApproval bool    `json:"requires_approval"`
-	CreatedBy        *string `json:"created_by,omitempty"`
-	CreatedByName    *string `json:"created_by_name,omitempty"`
 	CreatedAt        string  `json:"created_at"`
 	UpdatedAt        string  `json:"updated_at"`
 }
@@ -524,7 +520,6 @@ type CreatePolicyRequest struct {
 	Name             string  `json:"name"`
 	Description      *string `json:"description,omitempty"`
 	PolicyType       string  `json:"policy_type"`
-	OrganizationID   *string `json:"organization_id,omitempty"`
 	UpstreamRegistry *string `json:"upstream_registry,omitempty"`
 	NamespacePattern *string `json:"namespace_pattern,omitempty"`
 	ProviderPattern  *string `json:"provider_pattern,omitempty"`
