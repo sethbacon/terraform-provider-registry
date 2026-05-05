@@ -43,6 +43,65 @@ type PolicyEvaluateResult struct {
 	Result  map[string]interface{} `json:"result,omitempty"`
 }
 
+// Advisory represents a CVE or security advisory entry.
+type Advisory struct {
+	ID          string  `json:"id"`
+	ExternalID  string  `json:"external_id"`
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
+	Severity    string  `json:"severity"`
+	URL         *string `json:"url,omitempty"`
+	PublishedAt *string `json:"published_at,omitempty"`
+	ResolvedAt  *string `json:"resolved_at,omitempty"`
+	Active      bool    `json:"active"`
+}
+
+// ScanningConfig represents the backend scanner tool configuration.
+type ScanningConfig struct {
+	Enabled         bool     `json:"enabled"`
+	BinaryPath      *string  `json:"binary_path,omitempty"`
+	DetectedVersion *string  `json:"detected_version,omitempty"`
+	EnabledTools    []string `json:"enabled_tools"`
+}
+
+// ScanningStats represents aggregate scan statistics.
+type ScanningStats struct {
+	TotalScans     int `json:"total_scans"`
+	PassedScans    int `json:"passed_scans"`
+	FailedScans    int `json:"failed_scans"`
+	PendingScans   int `json:"pending_scans"`
+	TotalFindings  int `json:"total_findings"`
+	CriticalCount  int `json:"critical_count"`
+	HighCount      int `json:"high_count"`
+	MediumCount    int `json:"medium_count"`
+	LowCount       int `json:"low_count"`
+}
+
+// ScanFinding represents a single security finding in a scan.
+type ScanFinding struct {
+	ID          string  `json:"id"`
+	RuleID      string  `json:"rule_id"`
+	Severity    string  `json:"severity"`
+	Title       string  `json:"title"`
+	Description *string `json:"description,omitempty"`
+	Resource    *string `json:"resource,omitempty"`
+	FilePath    *string `json:"file_path,omitempty"`
+	LineNumber  *int    `json:"line_number,omitempty"`
+}
+
+// Scan represents a security scan result.
+type Scan struct {
+	ID             string        `json:"id"`
+	Status         string        `json:"status"`
+	Scanner        string        `json:"scanner"`
+	Passed         bool          `json:"passed"`
+	Findings       []ScanFinding `json:"findings,omitempty"`
+	ExecutionLog   *string       `json:"execution_log,omitempty"`
+	StartedAt      *string       `json:"started_at,omitempty"`
+	CompletedAt    *string       `json:"completed_at,omitempty"`
+	CreatedAt      string        `json:"created_at"`
+}
+
 // IdentityGroupMapping represents a single SAML/LDAP group → role mapping.
 type IdentityGroupMapping struct {
 	Group          string `json:"group"`
