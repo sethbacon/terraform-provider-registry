@@ -164,6 +164,7 @@ func (p *RegistryProvider) Resources(_ context.Context) []func() resource.Resour
 		NewModuleDeprecationResource,
 		NewModuleVersionDeprecationResource,
 		NewProviderVersionDeprecationResource,
+		NewOIDCGroupMappingResource,
 	}
 }
 
@@ -180,6 +181,7 @@ func (p *RegistryProvider) DataSources(_ context.Context) []func() datasource.Da
 		NewRoleTemplatesDataSource,
 		NewAuditLogsDataSource,
 		NewStatsDataSource,
+		NewOIDCConfigDataSource,
 	}
 }
 
