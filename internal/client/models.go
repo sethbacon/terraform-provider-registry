@@ -24,10 +24,10 @@ type CreateStorageMigrationRequest struct {
 
 // PolicyEngineConfig represents the rego policy engine bundle configuration.
 type PolicyEngineConfig struct {
-	BundleURL     string  `json:"bundle_url"`
-	BundleETag    *string `json:"bundle_etag,omitempty"`
-	LastLoadedAt  *string `json:"last_loaded_at,omitempty"`
-	Status        string  `json:"status"`
+	BundleURL    string  `json:"bundle_url"`
+	BundleETag   *string `json:"bundle_etag,omitempty"`
+	LastLoadedAt *string `json:"last_loaded_at,omitempty"`
+	Status       string  `json:"status"`
 }
 
 // PolicyEvaluateRequest is the payload for evaluating rego policy.
@@ -66,15 +66,15 @@ type ScanningConfig struct {
 
 // ScanningStats represents aggregate scan statistics.
 type ScanningStats struct {
-	TotalScans     int `json:"total_scans"`
-	PassedScans    int `json:"passed_scans"`
-	FailedScans    int `json:"failed_scans"`
-	PendingScans   int `json:"pending_scans"`
-	TotalFindings  int `json:"total_findings"`
-	CriticalCount  int `json:"critical_count"`
-	HighCount      int `json:"high_count"`
-	MediumCount    int `json:"medium_count"`
-	LowCount       int `json:"low_count"`
+	TotalScans    int `json:"total_scans"`
+	PassedScans   int `json:"passed_scans"`
+	FailedScans   int `json:"failed_scans"`
+	PendingScans  int `json:"pending_scans"`
+	TotalFindings int `json:"total_findings"`
+	CriticalCount int `json:"critical_count"`
+	HighCount     int `json:"high_count"`
+	MediumCount   int `json:"medium_count"`
+	LowCount      int `json:"low_count"`
 }
 
 // ScanFinding represents a single security finding in a scan.
@@ -91,15 +91,15 @@ type ScanFinding struct {
 
 // Scan represents a security scan result.
 type Scan struct {
-	ID             string        `json:"id"`
-	Status         string        `json:"status"`
-	Scanner        string        `json:"scanner"`
-	Passed         bool          `json:"passed"`
-	Findings       []ScanFinding `json:"findings,omitempty"`
-	ExecutionLog   *string       `json:"execution_log,omitempty"`
-	StartedAt      *string       `json:"started_at,omitempty"`
-	CompletedAt    *string       `json:"completed_at,omitempty"`
-	CreatedAt      string        `json:"created_at"`
+	ID           string        `json:"id"`
+	Status       string        `json:"status"`
+	Scanner      string        `json:"scanner"`
+	Passed       bool          `json:"passed"`
+	Findings     []ScanFinding `json:"findings,omitempty"`
+	ExecutionLog *string       `json:"execution_log,omitempty"`
+	StartedAt    *string       `json:"started_at,omitempty"`
+	CompletedAt  *string       `json:"completed_at,omitempty"`
+	CreatedAt    string        `json:"created_at"`
 }
 
 // IdentityGroupMapping represents a single SAML/LDAP group → role mapping.
@@ -118,11 +118,11 @@ type MTLSConfig struct {
 
 // OIDCConfig represents the backend OIDC configuration (read-only).
 type OIDCConfig struct {
-	Issuer         string   `json:"issuer"`
-	ClientID       string   `json:"client_id"`
-	Scopes         []string `json:"scopes"`
-	GroupsClaim    string   `json:"groups_claim"`
-	UsernameClaim  string   `json:"username_claim"`
+	Issuer        string   `json:"issuer"`
+	ClientID      string   `json:"client_id"`
+	Scopes        []string `json:"scopes"`
+	GroupsClaim   string   `json:"groups_claim"`
+	UsernameClaim string   `json:"username_claim"`
 }
 
 // OIDCGroupMapping represents a single OIDC group → role mapping entry.
@@ -578,11 +578,11 @@ type TerraformMirrorVersionPlatform struct {
 
 // TerraformMirrorVersion represents a single mirrored Terraform/OpenTofu version.
 type TerraformMirrorVersion struct {
-	ID        string                            `json:"id"`
-	Version   string                            `json:"version"`
-	Stable    bool                              `json:"stable"`
-	SyncedAt  *string                           `json:"synced_at,omitempty"`
-	Platforms []TerraformMirrorVersionPlatform  `json:"platforms,omitempty"`
+	ID        string                           `json:"id"`
+	Version   string                           `json:"version"`
+	Stable    bool                             `json:"stable"`
+	SyncedAt  *string                          `json:"synced_at,omitempty"`
+	Platforms []TerraformMirrorVersionPlatform `json:"platforms,omitempty"`
 }
 
 // TerraformMirrorHistoryEntry represents one sync history record for a mirror.
