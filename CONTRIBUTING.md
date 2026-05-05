@@ -4,16 +4,13 @@ Thank you for your interest in contributing to the Terraform Registry Provider!
 
 ## Branching Model
 
-This project uses a two-branch strategy:
+This project uses a single-branch model — all development happens on feature and fix branches
+that are squash-merged directly into `main` via pull request.
 
-- **`main`** — production-ready code only. Every commit on `main` corresponds to a tagged release.
-  Do not push directly to `main`.
-- **`development`** — the integration branch. All feature and fix branches are merged here first.
-  CI must pass before merging.
-
-Feature and fix branches are created from `development` and merged back into `development` via
-pull request. When the integration branch is stable and ready to ship, a release PR is opened
-from `development` → `main`.
+- **`main`** — the single integration and release branch. All PRs target `main`. Do not push
+  directly to `main`.
+- **`fix/<description>`** — bug fix branches.
+- **`feature/<description>`** — new functionality branches.
 
 ## Getting Started
 
@@ -39,11 +36,11 @@ go mod download
 Before writing code, open a GitHub issue describing the bug or feature. Reference this issue
 in your commits and PR body.
 
-### 2. Create a branch from `development`
+### 2. Create a branch from `main`
 
 ```bash
 git fetch origin
-git checkout -b fix/short-description origin/development
+git checkout -b fix/short-description origin/main
 # or: feature/short-description
 ```
 
@@ -92,7 +89,8 @@ Do not push until all checks pass locally.
 
 ### 4. Commit
 
-Write clear, imperative commit messages. No co-author attribution lines.
+Write clear, imperative commit messages following [Conventional Commits](https://www.conventionalcommits.org/).
+No co-author attribution lines.
 
 ```bash
 git add <specific files>
@@ -105,7 +103,7 @@ Closes #<issue-number>"
 
 ```bash
 git fetch origin
-git rebase origin/development
+git rebase origin/main
 ```
 
 ### 6. Push and open a pull request
@@ -114,7 +112,8 @@ git rebase origin/development
 git push -u origin fix/short-description
 ```
 
-Open a PR targeting **`development`** (not `main`). Include:
+Open a PR targeting **`main`**. The PR title must follow Conventional Commits — CI enforces
+this via the `Conventional PR Title` check. Include:
 
 - A description of the change and why it is needed.
 - A reference to the issue (`Closes #N`).
@@ -130,9 +129,10 @@ bodies at release time.
 
 ### 7. Review and merge
 
-- Ensure CI passes (Build, Lint, Unit Tests, Acceptance Tests).
+- Ensure CI passes (Build, Lint, Unit Tests, Acceptance Tests, Conventional PR Title,
+  Dependency Review).
 - Address review feedback.
-- A maintainer will squash-merge your PR into `development`.
+- A maintainer will squash-merge your PR into `main`.
 
 ### 8. Clean up
 
@@ -184,15 +184,7 @@ make testacc
 ## Releasing
 
 Releases are managed by maintainers. If you believe a release is needed, open an issue or
-mention it in a PR discussion.
-
-The release process:
-
-1. Collect changelog entries from merged PR bodies since the last release.
-2. Update `CHANGELOG.md` on `development`.
-3. Open a PR from `development` → `main`.
-4. After the PR is merged, tag the commit on `main` with `vX.Y.Z`.
-5. The `release.yml` workflow runs GoReleaser automatically.
+mention it in a PR discussion. See [RELEASING.md](RELEASING.md) for the full process.
 
 ## Questions
 
