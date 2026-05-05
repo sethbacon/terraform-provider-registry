@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.1] - 2026-05-04
+
+### Added
+
+- `registry_organization` and `data.registry_organizations` support `idp_type` and `idp_name` for organization-IdP binding (#12)
+- `registry_module` and `data.registry_modules` expose computed deprecation state: `deprecated`, `deprecated_at`, `deprecation_message`, `successor_module_id` (#13)
+- `registry_mirror` and `data.registry_mirrors` support `pull_through_enabled` and `pull_through_cache_ttl_hours` (#14)
+- `registry_terraform_mirror` and `data.registry_terraform_mirrors` support `custom_gpg_key` (sensitive) and `skip_gpg_verify` (#15)
+- `registry_storage_config` exposes four computed credential-set indicators: `azure_account_key_set`, `s3_access_key_id_set`, `s3_secret_access_key_set`, `gcs_credentials_json_set`; S3 IAM-role auth fields (`s3_role_arn`, `s3_role_session_name`, `s3_external_id`, `s3_web_identity_token_file`) are now accepted in the `config` map (#16)
+- `registry_policy` supports `organization_id` (org-scoped policies; null = global), `organization_name` (read-only), and audit fields `created_by` / `created_by_name` (#17)
+
+---
+
 ## [0.2.0] - 2026-05-01
 
 This release realigns the provider with backend `terraform-registry-backend` v1.0.0
