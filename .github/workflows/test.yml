@@ -46,7 +46,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a1a9d1dc55a22c86 # v7.0.0
+      - uses: golangci/golangci-lint-action@9fae48acfc02a90574d7c304a1758ef9895495fa # v7.0.1
         with:
           version: v2.11.3
 
@@ -76,7 +76,7 @@ jobs:
       # Pre-install Terraform so terraform-plugin-testing finds it on PATH
       # instead of downloading and GPG-verifying it from releases.hashicorp.com.
       # Avoids transient hc-install signature failures.
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065 # v3.2.0
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_wrapper: false
 
