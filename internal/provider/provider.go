@@ -191,6 +191,11 @@ func (p *RegistryProvider) DataSources(_ context.Context) []func() datasource.Da
 		NewAuditLogDataSource,
 		NewIdentityGroupMappingsDataSource,
 		NewMTLSConfigDataSource,
+		NewAdvisoriesDataSource,
+		NewScanningConfigDataSource,
+		NewScanningStatsDataSource,
+		NewScanDataSource,
+		NewModuleScanDataSource,
 	}
 }
 
