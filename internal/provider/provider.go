@@ -182,6 +182,9 @@ func (p *RegistryProvider) DataSources(_ context.Context) []func() datasource.Da
 		NewAuditLogsDataSource,
 		NewStatsDataSource,
 		NewOIDCConfigDataSource,
+		NewTerraformMirrorVersionsDataSource,
+		NewTerraformMirrorVersionDataSource,
+		NewTerraformMirrorHistoryDataSource,
 	}
 }
 

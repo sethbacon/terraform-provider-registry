@@ -453,6 +453,32 @@ type UpdateTerraformMirrorRequest struct {
 	SyncIntervalHours *int     `json:"sync_interval_hours,omitempty"`
 }
 
+// TerraformMirrorVersionPlatform represents a platform entry for a mirrored Terraform version.
+type TerraformMirrorVersionPlatform struct {
+	OS   string `json:"os"`
+	Arch string `json:"arch"`
+	URL  string `json:"url,omitempty"`
+}
+
+// TerraformMirrorVersion represents a single mirrored Terraform/OpenTofu version.
+type TerraformMirrorVersion struct {
+	ID        string                            `json:"id"`
+	Version   string                            `json:"version"`
+	Stable    bool                              `json:"stable"`
+	SyncedAt  *string                           `json:"synced_at,omitempty"`
+	Platforms []TerraformMirrorVersionPlatform  `json:"platforms,omitempty"`
+}
+
+// TerraformMirrorHistoryEntry represents one sync history record for a mirror.
+type TerraformMirrorHistoryEntry struct {
+	ID          string  `json:"id"`
+	StartedAt   string  `json:"started_at"`
+	CompletedAt *string `json:"completed_at,omitempty"`
+	Status      string  `json:"status"`
+	Message     *string `json:"message,omitempty"`
+	VersionsNew int     `json:"versions_new"`
+}
+
 // StorageConfig represents a storage backend configuration.
 type StorageConfig struct {
 	ID          string `json:"id"`
