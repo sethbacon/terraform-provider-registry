@@ -11,6 +11,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.1] - 2026-05-06
+
+### Documentation
+
+- README aligned with current provider state: corrected version constraint
+  (`~> 0.3`), documented the `insecure` / `timeout` / `max_retries` /
+  `version_check` provider arguments, added 6 missing resources and 14
+  missing data sources to the resource tables, clarified that the
+  `terraform-registry/registry` source path is a local-only convention
+  used by `make install`, and replaced the stale two-branch model note
+  with the current single-branch flow (#72)
+- Bumped `GNUmakefile` `VERSION` to match this release so `make install`
+  drops the binary into a path matching the published provider version (#72)
+
+### Changed
+
+- Acceptance-test CI is now sharded across 4 parallel jobs, cutting wall
+  time from ~40 min to ~12 min per PR. An aggregator job preserves the
+  `Acceptance Tests` required-check name so branch protection is unchanged (#71)
+
+### Fixed
+
+- Bumped `go.opentelemetry.io/otel` and `go.opentelemetry.io/otel/sdk` to
+  `v1.43.0`, resolving four transitive OSV findings (GHSA-mh2q-q3fh-2475,
+  GHSA-9h8m-3fm2-qjrq, GHSA-hfvc-g4fc-pqhx, GO-2026-4394) (#70)
+- Added `.gitattributes` to enforce LF line endings on Windows checkouts
+  so `gofmt` no longer reports false-positive lint failures; corrected
+  `const` alignment in `resource_storage_migration.go` (#68)
+- Applied `gofmt` to three files; pinned the test-stack backend image to
+  the correct registry tag (`1.0.5`, no `v` prefix) (#67)
+
+### CI / supply chain
+
+- Corrected pinned action SHAs across all workflows so jobs run against
+  the intended action versions (#65)
+- Aligned the repo's CI hardening posture with the backend: pinned
+  action SHAs everywhere, weekly OSV-Scanner + CodeQL job, dependency
+  review on PRs, Conventional PR-title check, dependabot for `gomod`
+  and `github-actions`, SLSA build-provenance attestation on releases (#63)
+
+---
+
 ## [0.3.0] - 2026-05-05
 
 ### Added
