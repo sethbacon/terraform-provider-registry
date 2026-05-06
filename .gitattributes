@@ -1,0 +1,29 @@
+# Normalize line endings to LF in the repository.
+# This prevents gofmt from reporting formatting issues on Windows checkouts
+# where Git autocrlf converts LF → CRLF.
+* text=auto eol=lf
+
+# Go source files must always be LF.
+*.go text eol=lf
+
+# YAML/JSON/Markdown — keep LF.
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+
+# Shell scripts — LF required for execution on Linux/macOS.
+*.sh text eol=lf
+
+# Windows batch files are the one exception.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binaries — no line ending conversion.
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.tar binary

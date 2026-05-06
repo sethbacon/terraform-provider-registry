@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	migrationPollInterval  = 15 * time.Second
+	migrationPollInterval   = 15 * time.Second
 	migrationDefaultTimeout = 60 * time.Minute
 )
 
