@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.3.2] - 2026-05-06
+
+### Fixed
+
+- `registry_module_version_deprecation` no longer churns state on every refresh.
+  `client.GetModuleVersion` was hitting `GET /api/v1/modules/{ns}/{name}/{sys}/{version}`
+  — a route the backend does not expose — so the Read implementation always
+  saw a 404, removed the resource from state, and triggered recreation on the
+  next plan. The client now derives version-level state from the existing
+  `GET /api/v1/modules/{ns}/{name}/{sys}` endpoint, the same approach the
+  frontend uses. Works against any backend version (#74, #75)
+
+### Changed
+
+- Bumped `GNUmakefile` `VERSION` to `0.3.2` so `make install` drops the
+  binary into a path matching the published release.
+
+---
+
 ## [0.3.1] - 2026-05-06
 
 ### Documentation
