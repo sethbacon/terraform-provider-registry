@@ -2,7 +2,7 @@ HOSTNAME     = registry.terraform.io
 NAMESPACE    = terraform-registry
 NAME         = registry
 BINARY       = terraform-provider-${NAME}
-VERSION      = 0.3.1
+VERSION      = 0.3.2
 OS_ARCH      = $(shell go env GOOS)_$(shell go env GOARCH)
 
 default: build
