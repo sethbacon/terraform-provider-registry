@@ -44,3 +44,23 @@ clean:
 .PHONY: tidy
 tidy:
 	go mod tidy
+
+# Regenerate Go types from the backend's OpenAPI 3 spec. Pulls the spec
+# from a pinned backend image, patches it for strict OpenAPI 3 validators
+# (path-level parameters, deduped enums, declared security schemes — all
+# tracked as backend issues #359/#360/#361), and runs oapi-codegen to write
+# internal/client/spec/models_gen.go.
+#
+# CI re-runs this on every PR and fails on `git diff` (see weekly-security.yml).
+.PHONY: models-gen
+models-gen:
+	@echo "==> Pulling openapi3.json from pinned backend image..."
+	./internal/client/spec/fetch-spec.sh
+	@echo "==> Preprocessing spec for strict validators..."
+	python3 internal/client/spec/preprocess.py \
+		internal/client/spec/openapi3.json \
+		internal/client/spec/openapi3-patched.json
+	@echo "==> Generating Go types..."
+	cd internal/client/spec && oapi-codegen -config oapi-codegen.yaml openapi3-patched.json
+	gofmt -s -w internal/client/spec/models_gen.go
+	@echo "==> Done. Generated $$(wc -l < internal/client/spec/models_gen.go) lines."

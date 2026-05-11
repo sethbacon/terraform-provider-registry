@@ -1,0 +1,30 @@
+# Configuration for oapi-codegen.
+#
+# Generates Go types from the backend's OpenAPI 3 spec (openapi3.json), which
+# is emitted natively by the backend starting in v1.1.5
+# (terraform-registry-backend#352).
+#
+# Only types are generated — no client, no server. The hand-written client
+# in internal/client/client.go stays. Generated types live under their own
+# `spec` sub-package so they coexist with the existing hand-written types
+# in internal/client/models.go during a per-resource migration. Each
+# subsequent PR will switch one resource (e.g. User) over to use spec.User
+# and delete the corresponding hand-written struct.
+#
+# To regenerate:
+#   make models-gen
+#
+# CI re-runs this on every PR and fails if `git diff` shows drift, so the
+# spec snapshot can never silently fall behind the backend.
+
+package: spec
+generate:
+  models: true
+  client: false
+output: models_gen.go
+output-options:
+  # Pretty-print imports and structs.
+  skip-fmt: false
+  # Keep all schemas even if not referenced by any operation — we want the full
+  # type catalog available for hand-written client code to consume.
+  skip-prune: true
