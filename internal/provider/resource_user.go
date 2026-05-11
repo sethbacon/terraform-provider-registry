@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/terraform-registry/terraform-provider-registry/internal/client"
+	"github.com/terraform-registry/terraform-provider-registry/internal/client/spec"
 )
 
 var _ resource.Resource = &UserResource{}
@@ -23,7 +24,6 @@ type UserResourceModel struct {
 	ID        types.String `tfsdk:"id"`
 	Email     types.String `tfsdk:"email"`
 	Name      types.String `tfsdk:"name"`
-	OIDCSub   types.String `tfsdk:"oidc_sub"`
 	CreatedAt types.String `tfsdk:"created_at"`
 	UpdatedAt types.String `tfsdk:"updated_at"`
 }
@@ -54,11 +54,6 @@ func (r *UserResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"name": schema.StringAttribute{
 				Description: "Display name of the user.",
 				Required:    true,
-			},
-			"oidc_sub": schema.StringAttribute{
-				Description: "OIDC subject identifier. Set to link this user to an external identity provider subject.",
-				Optional:    true,
-				Computed:    true,
 			},
 			"created_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp when the user was created.",
@@ -94,16 +89,10 @@ func (r *UserResource) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	createReq := client.CreateUserRequest{
+	user, err := r.client.CreateUser(ctx, client.CreateUserRequest{
 		Email: plan.Email.ValueString(),
 		Name:  plan.Name.ValueString(),
-	}
-	if !plan.OIDCSub.IsNull() && !plan.OIDCSub.IsUnknown() {
-		v := plan.OIDCSub.ValueString()
-		createReq.OIDCSub = &v
-	}
-
-	user, err := r.client.CreateUser(ctx, createReq)
+	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error Creating User", err.Error())
 		return
@@ -139,16 +128,10 @@ func (r *UserResource) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	updateReq := client.UpdateUserRequest{
+	user, err := r.client.UpdateUser(ctx, plan.ID.ValueString(), client.UpdateUserRequest{
 		Email: plan.Email.ValueString(),
 		Name:  plan.Name.ValueString(),
-	}
-	if !plan.OIDCSub.IsNull() && !plan.OIDCSub.IsUnknown() {
-		v := plan.OIDCSub.ValueString()
-		updateReq.OIDCSub = &v
-	}
-
-	user, err := r.client.UpdateUser(ctx, plan.ID.ValueString(), updateReq)
+	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error Updating User", err.Error())
 		return
@@ -178,18 +161,18 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 	resp.Diagnostics.Append(resp.State.Set(ctx, userToModel(user))...)
 }
 
-func userToModel(u *client.User) UserResourceModel {
-	m := UserResourceModel{
-		ID:        types.StringValue(u.ID),
-		Email:     types.StringValue(u.Email),
-		Name:      types.StringValue(u.Name),
-		CreatedAt: types.StringValue(u.CreatedAt),
-		UpdatedAt: types.StringValue(u.UpdatedAt),
+func userToModel(u *spec.User) UserResourceModel {
+	deref := func(s *string) types.String {
+		if s == nil {
+			return types.StringValue("")
+		}
+		return types.StringValue(*s)
 	}
-	if u.OIDCSub != nil {
-		m.OIDCSub = types.StringValue(*u.OIDCSub)
-	} else {
-		m.OIDCSub = types.StringNull()
+	return UserResourceModel{
+		ID:        deref(u.Id),
+		Email:     deref(u.Email),
+		Name:      deref(u.Name),
+		CreatedAt: deref(u.CreatedAt),
+		UpdatedAt: deref(u.UpdatedAt),
 	}
-	return m
 }

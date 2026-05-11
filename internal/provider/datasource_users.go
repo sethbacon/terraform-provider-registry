@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/terraform-registry/terraform-provider-registry/internal/client"
+	"github.com/terraform-registry/terraform-provider-registry/internal/client/spec"
 )
 
 var _ datasource.DataSource = &UsersDataSource{}
@@ -25,7 +26,6 @@ type UserModel struct {
 	ID        types.String `tfsdk:"id"`
 	Email     types.String `tfsdk:"email"`
 	Name      types.String `tfsdk:"name"`
-	OIDCSub   types.String `tfsdk:"oidc_sub"`
 	CreatedAt types.String `tfsdk:"created_at"`
 	UpdatedAt types.String `tfsdk:"updated_at"`
 }
@@ -54,7 +54,6 @@ func (d *UsersDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, 
 						"id":         schema.StringAttribute{Computed: true, Description: "UUID of the user."},
 						"email":      schema.StringAttribute{Computed: true, Description: "User email."},
 						"name":       schema.StringAttribute{Computed: true, Description: "User display name."},
-						"oidc_sub":   schema.StringAttribute{Computed: true, Description: "OIDC subject identifier."},
 						"created_at": schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
 						"updated_at": schema.StringAttribute{Computed: true, Description: "Last update timestamp."},
 					},
@@ -89,23 +88,26 @@ func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	models := make([]UserModel, len(users))
+	config.Users = make([]UserModel, len(users))
 	for i, u := range users {
-		m := UserModel{
-			ID:        types.StringValue(u.ID),
-			Email:     types.StringValue(u.Email),
-			Name:      types.StringValue(u.Name),
-			CreatedAt: types.StringValue(u.CreatedAt),
-			UpdatedAt: types.StringValue(u.UpdatedAt),
-		}
-		if u.OIDCSub != nil {
-			m.OIDCSub = types.StringValue(*u.OIDCSub)
-		} else {
-			m.OIDCSub = types.StringNull()
-		}
-		models[i] = m
+		config.Users[i] = specUserToModel(&u)
 	}
 
-	config.Users = models
 	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)
+}
+
+func specUserToModel(u *spec.User) UserModel {
+	deref := func(s *string) types.String {
+		if s == nil {
+			return types.StringValue("")
+		}
+		return types.StringValue(*s)
+	}
+	return UserModel{
+		ID:        deref(u.Id),
+		Email:     deref(u.Email),
+		Name:      deref(u.Name),
+		CreatedAt: deref(u.CreatedAt),
+		UpdatedAt: deref(u.UpdatedAt),
+	}
 }
