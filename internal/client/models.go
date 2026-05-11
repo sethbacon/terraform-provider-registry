@@ -132,16 +132,6 @@ type OIDCGroupMapping struct {
 	RoleTemplateID string `json:"role_template_id"`
 }
 
-// User represents a registry user.
-type User struct {
-	ID        string  `json:"id"`
-	Email     string  `json:"email"`
-	Name      string  `json:"name"`
-	OIDCSub   *string `json:"oidc_sub,omitempty"`
-	CreatedAt string  `json:"created_at"`
-	UpdatedAt string  `json:"updated_at"`
-}
-
 // CreateUserRequest is the payload for creating a user.
 type CreateUserRequest struct {
 	Email   string  `json:"email"`
@@ -151,9 +141,8 @@ type CreateUserRequest struct {
 
 // UpdateUserRequest is the payload for updating a user.
 type UpdateUserRequest struct {
-	Email   string  `json:"email"`
-	Name    string  `json:"name"`
-	OIDCSub *string `json:"oidc_sub,omitempty"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
 }
 
 // Organization represents a registry organization.
