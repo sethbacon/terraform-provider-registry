@@ -20,10 +20,10 @@ type OIDCGroupMappingResource struct {
 }
 
 type OIDCGroupMappingResourceModel struct {
-	ID             types.String `tfsdk:"id"`
-	OIDCGroup      types.String `tfsdk:"oidc_group"`
-	OrganizationID types.String `tfsdk:"organization_id"`
-	RoleTemplateID types.String `tfsdk:"role_template_id"`
+	ID           types.String `tfsdk:"id"`
+	Group        types.String `tfsdk:"group"`
+	Organization types.String `tfsdk:"organization"`
+	Role         types.String `tfsdk:"role"`
 }
 
 func NewOIDCGroupMappingResource() resource.Resource {
@@ -39,28 +39,28 @@ func (r *OIDCGroupMappingResource) Schema(_ context.Context, _ resource.SchemaRe
 		Description: "Manages a single OIDC group → organization role mapping. The backend stores mappings as a full-replace list; this resource reads the current list, adds or removes its entry, and writes the list back.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
-				Description: "Composite identifier: {oidc_group}:{organization_id}.",
+				Description: "Composite identifier: {group}:{organization}.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"oidc_group": schema.StringAttribute{
+			"group": schema.StringAttribute{
 				Description: "OIDC groups claim value to match.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"organization_id": schema.StringAttribute{
-				Description: "UUID of the organization this mapping applies to.",
+			"organization": schema.StringAttribute{
+				Description: "Organization name or ID this mapping applies to.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"role_template_id": schema.StringAttribute{
-				Description: "UUID of the role template to assign.",
+			"role": schema.StringAttribute{
+				Description: "Role name to assign members of this group.",
 				Required:    true,
 			},
 		},
@@ -86,25 +86,30 @@ func (r *OIDCGroupMappingResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
-	current, err := r.client.GetOIDCGroupMappings(ctx)
+	cfg, err := r.client.GetOIDCConfig(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Error Reading OIDC Group Mappings", err.Error())
+		resp.Diagnostics.AddError("Error Reading OIDC Config", err.Error())
 		return
 	}
 
 	entry := client.OIDCGroupMapping{
-		OIDCGroup:      plan.OIDCGroup.ValueString(),
-		OrganizationID: plan.OrganizationID.ValueString(),
-		RoleTemplateID: plan.RoleTemplateID.ValueString(),
+		Group:        plan.Group.ValueString(),
+		Organization: plan.Organization.ValueString(),
+		Role:         plan.Role.ValueString(),
 	}
 
-	updated := upsertMapping(current, entry)
-	if _, err := r.client.SetOIDCGroupMappings(ctx, updated); err != nil {
+	mappings := upsertMapping(cfg.GroupMappings, entry)
+	input := client.OIDCGroupMappingInput{
+		GroupClaimName: cfg.GroupClaimName,
+		GroupMappings:  mappings,
+		DefaultRole:    cfg.DefaultRole,
+	}
+	if _, err := r.client.SetOIDCGroupMappings(ctx, input); err != nil {
 		resp.Diagnostics.AddError("Error Setting OIDC Group Mappings", err.Error())
 		return
 	}
 
-	plan.ID = types.StringValue(oidcMappingID(plan.OIDCGroup.ValueString(), plan.OrganizationID.ValueString()))
+	plan.ID = types.StringValue(oidcMappingID(plan.Group.ValueString(), plan.Organization.ValueString()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -122,8 +127,8 @@ func (r *OIDCGroupMappingResource) Read(ctx context.Context, req resource.ReadRe
 	}
 
 	for _, m := range mappings {
-		if m.OIDCGroup == state.OIDCGroup.ValueString() && m.OrganizationID == state.OrganizationID.ValueString() {
-			state.RoleTemplateID = types.StringValue(m.RoleTemplateID)
+		if m.Group == state.Group.ValueString() && m.Organization == state.Organization.ValueString() {
+			state.Role = types.StringValue(m.Role)
 			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 			return
 		}
@@ -139,24 +144,30 @@ func (r *OIDCGroupMappingResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
-	current, err := r.client.GetOIDCGroupMappings(ctx)
+	cfg, err := r.client.GetOIDCConfig(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Error Reading OIDC Group Mappings", err.Error())
+		resp.Diagnostics.AddError("Error Reading OIDC Config", err.Error())
 		return
 	}
 
 	entry := client.OIDCGroupMapping{
-		OIDCGroup:      plan.OIDCGroup.ValueString(),
-		OrganizationID: plan.OrganizationID.ValueString(),
-		RoleTemplateID: plan.RoleTemplateID.ValueString(),
+		Group:        plan.Group.ValueString(),
+		Organization: plan.Organization.ValueString(),
+		Role:         plan.Role.ValueString(),
 	}
 
-	updated := upsertMapping(current, entry)
-	if _, err := r.client.SetOIDCGroupMappings(ctx, updated); err != nil {
+	mappings := upsertMapping(cfg.GroupMappings, entry)
+	input := client.OIDCGroupMappingInput{
+		GroupClaimName: cfg.GroupClaimName,
+		GroupMappings:  mappings,
+		DefaultRole:    cfg.DefaultRole,
+	}
+	if _, err := r.client.SetOIDCGroupMappings(ctx, input); err != nil {
 		resp.Diagnostics.AddError("Error Setting OIDC Group Mappings", err.Error())
 		return
 	}
 
+	plan.ID = types.StringValue(oidcMappingID(plan.Group.ValueString(), plan.Organization.ValueString()))
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -167,25 +178,30 @@ func (r *OIDCGroupMappingResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
-	current, err := r.client.GetOIDCGroupMappings(ctx)
+	cfg, err := r.client.GetOIDCConfig(ctx)
 	if err != nil {
-		resp.Diagnostics.AddError("Error Reading OIDC Group Mappings", err.Error())
+		resp.Diagnostics.AddError("Error Reading OIDC Config", err.Error())
 		return
 	}
 
-	updated := removeMapping(current, state.OIDCGroup.ValueString(), state.OrganizationID.ValueString())
-	if _, err := r.client.SetOIDCGroupMappings(ctx, updated); err != nil {
+	mappings := removeMapping(cfg.GroupMappings, state.Group.ValueString(), state.Organization.ValueString())
+	input := client.OIDCGroupMappingInput{
+		GroupClaimName: cfg.GroupClaimName,
+		GroupMappings:  mappings,
+		DefaultRole:    cfg.DefaultRole,
+	}
+	if _, err := r.client.SetOIDCGroupMappings(ctx, input); err != nil {
 		resp.Diagnostics.AddError("Error Setting OIDC Group Mappings", err.Error())
 	}
 }
 
-func oidcMappingID(group, orgID string) string {
-	return fmt.Sprintf("%s:%s", group, orgID)
+func oidcMappingID(group, org string) string {
+	return fmt.Sprintf("%s:%s", group, org)
 }
 
 func upsertMapping(current []client.OIDCGroupMapping, entry client.OIDCGroupMapping) []client.OIDCGroupMapping {
 	for i, m := range current {
-		if m.OIDCGroup == entry.OIDCGroup && m.OrganizationID == entry.OrganizationID {
+		if m.Group == entry.Group && m.Organization == entry.Organization {
 			current[i] = entry
 			return current
 		}
@@ -193,10 +209,10 @@ func upsertMapping(current []client.OIDCGroupMapping, entry client.OIDCGroupMapp
 	return append(current, entry)
 }
 
-func removeMapping(current []client.OIDCGroupMapping, group, orgID string) []client.OIDCGroupMapping {
+func removeMapping(current []client.OIDCGroupMapping, group, org string) []client.OIDCGroupMapping {
 	result := make([]client.OIDCGroupMapping, 0, len(current))
 	for _, m := range current {
-		if m.OIDCGroup != group || m.OrganizationID != orgID {
+		if m.Group != group || m.Organization != org {
 			result = append(result, m)
 		}
 	}

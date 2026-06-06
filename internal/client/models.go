@@ -116,20 +116,40 @@ type MTLSConfig struct {
 	ServerCert *string `json:"server_cert_subject,omitempty"`
 }
 
-// OIDCConfig represents the backend OIDC configuration (read-only).
+// OIDCConfig represents the backend OIDC configuration response (read-only).
+// Mirrors backend models.OIDCConfigResponse.
 type OIDCConfig struct {
-	Issuer        string   `json:"issuer"`
-	ClientID      string   `json:"client_id"`
-	Scopes        []string `json:"scopes"`
-	GroupsClaim   string   `json:"groups_claim"`
-	UsernameClaim string   `json:"username_claim"`
+	ID             string                 `json:"id"`
+	Name           string                 `json:"name"`
+	ProviderType   string                 `json:"provider_type"`
+	IssuerURL      string                 `json:"issuer_url"`
+	ClientID       string                 `json:"client_id"`
+	RedirectURL    string                 `json:"redirect_url"`
+	Scopes         []string               `json:"scopes"`
+	IsActive       bool                   `json:"is_active"`
+	GroupClaimName string                 `json:"group_claim_name,omitempty"`
+	GroupMappings  []OIDCGroupMapping     `json:"group_mappings,omitempty"`
+	DefaultRole    string                 `json:"default_role,omitempty"`
+	ExtraConfig    map[string]interface{} `json:"extra_config,omitempty"`
+	CreatedAt      string                 `json:"created_at"`
+	UpdatedAt      string                 `json:"updated_at"`
+	CreatedBy      *string                `json:"created_by,omitempty"`
+	UpdatedBy      *string                `json:"updated_by,omitempty"`
 }
 
 // OIDCGroupMapping represents a single OIDC group → role mapping entry.
+// Mirrors backend models.OIDCGroupMapping.
 type OIDCGroupMapping struct {
-	OIDCGroup      string `json:"oidc_group"`
-	OrganizationID string `json:"organization_id"`
-	RoleTemplateID string `json:"role_template_id"`
+	Group        string `json:"group"`
+	Organization string `json:"organization"`
+	Role         string `json:"role"`
+}
+
+// OIDCGroupMappingInput is the request body for PUT /api/v1/admin/oidc/group-mapping.
+type OIDCGroupMappingInput struct {
+	GroupClaimName string             `json:"group_claim_name"`
+	GroupMappings  []OIDCGroupMapping `json:"group_mappings"`
+	DefaultRole    string             `json:"default_role"`
 }
 
 // CreateUserRequest is the payload for creating a user.

@@ -17,11 +17,18 @@ type OIDCConfigDataSource struct {
 }
 
 type OIDCConfigDataSourceModel struct {
-	Issuer        types.String `tfsdk:"issuer"`
-	ClientID      types.String `tfsdk:"client_id"`
-	Scopes        types.List   `tfsdk:"scopes"`
-	GroupsClaim   types.String `tfsdk:"groups_claim"`
-	UsernameClaim types.String `tfsdk:"username_claim"`
+	ID             types.String `tfsdk:"id"`
+	Name           types.String `tfsdk:"name"`
+	ProviderType   types.String `tfsdk:"provider_type"`
+	IssuerURL      types.String `tfsdk:"issuer_url"`
+	ClientID       types.String `tfsdk:"client_id"`
+	RedirectURL    types.String `tfsdk:"redirect_url"`
+	Scopes         types.List   `tfsdk:"scopes"`
+	IsActive       types.Bool   `tfsdk:"is_active"`
+	GroupClaimName types.String `tfsdk:"group_claim_name"`
+	DefaultRole    types.String `tfsdk:"default_role"`
+	CreatedAt      types.String `tfsdk:"created_at"`
+	UpdatedAt      types.String `tfsdk:"updated_at"`
 }
 
 func NewOIDCConfigDataSource() datasource.DataSource {
@@ -36,7 +43,19 @@ func (d *OIDCConfigDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 	resp.Schema = schema.Schema{
 		Description: "Reads the backend OIDC configuration (read-only). The client secret is never exposed.",
 		Attributes: map[string]schema.Attribute{
-			"issuer": schema.StringAttribute{
+			"id": schema.StringAttribute{
+				Description: "UUID of the OIDC configuration.",
+				Computed:    true,
+			},
+			"name": schema.StringAttribute{
+				Description: "Display name of the OIDC configuration.",
+				Computed:    true,
+			},
+			"provider_type": schema.StringAttribute{
+				Description: "OIDC provider type (e.g. generic, okta, azure-ad).",
+				Computed:    true,
+			},
+			"issuer_url": schema.StringAttribute{
 				Description: "OIDC issuer URL.",
 				Computed:    true,
 			},
@@ -44,17 +63,33 @@ func (d *OIDCConfigDataSource) Schema(_ context.Context, _ datasource.SchemaRequ
 				Description: "OIDC client ID.",
 				Computed:    true,
 			},
+			"redirect_url": schema.StringAttribute{
+				Description: "OAuth2 redirect URL.",
+				Computed:    true,
+			},
 			"scopes": schema.ListAttribute{
 				Description: "Requested OIDC scopes.",
 				Computed:    true,
 				ElementType: types.StringType,
 			},
-			"groups_claim": schema.StringAttribute{
-				Description: "JWT claim used to extract group membership.",
+			"is_active": schema.BoolAttribute{
+				Description: "Whether this OIDC configuration is active.",
 				Computed:    true,
 			},
-			"username_claim": schema.StringAttribute{
-				Description: "JWT claim used as the username.",
+			"group_claim_name": schema.StringAttribute{
+				Description: "JWT claim name used to extract group membership.",
+				Computed:    true,
+			},
+			"default_role": schema.StringAttribute{
+				Description: "Default role assigned when no group mapping matches.",
+				Computed:    true,
+			},
+			"created_at": schema.StringAttribute{
+				Description: "Creation timestamp (RFC3339).",
+				Computed:    true,
+			},
+			"updated_at": schema.StringAttribute{
+				Description: "Last update timestamp (RFC3339).",
 				Computed:    true,
 			},
 		},
@@ -87,11 +122,18 @@ func (d *OIDCConfigDataSource) Read(ctx context.Context, _ datasource.ReadReques
 	}
 
 	model := OIDCConfigDataSourceModel{
-		Issuer:        types.StringValue(cfg.Issuer),
-		ClientID:      types.StringValue(cfg.ClientID),
-		Scopes:        scopes,
-		GroupsClaim:   types.StringValue(cfg.GroupsClaim),
-		UsernameClaim: types.StringValue(cfg.UsernameClaim),
+		ID:             types.StringValue(cfg.ID),
+		Name:           types.StringValue(cfg.Name),
+		ProviderType:   types.StringValue(cfg.ProviderType),
+		IssuerURL:      types.StringValue(cfg.IssuerURL),
+		ClientID:       types.StringValue(cfg.ClientID),
+		RedirectURL:    types.StringValue(cfg.RedirectURL),
+		Scopes:         scopes,
+		IsActive:       types.BoolValue(cfg.IsActive),
+		GroupClaimName: types.StringValue(cfg.GroupClaimName),
+		DefaultRole:    types.StringValue(cfg.DefaultRole),
+		CreatedAt:      types.StringValue(cfg.CreatedAt),
+		UpdatedAt:      types.StringValue(cfg.UpdatedAt),
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, model)...)
 }

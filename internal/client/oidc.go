@@ -11,20 +11,21 @@ func (c *Client) GetOIDCConfig(ctx context.Context) (*OIDCConfig, error) {
 	return &cfg, nil
 }
 
-// GetOIDCGroupMappings fetches the current OIDC group mappings via GET /api/v1/admin/oidc/group-mapping.
+// GetOIDCGroupMappings returns the group mappings from the active OIDC config.
+// The backend has no separate GET for group mappings; they are embedded in the config response.
 func (c *Client) GetOIDCGroupMappings(ctx context.Context) ([]OIDCGroupMapping, error) {
-	var mappings []OIDCGroupMapping
-	if err := c.Get(ctx, "/api/v1/admin/oidc/group-mapping", &mappings); err != nil {
+	cfg, err := c.GetOIDCConfig(ctx)
+	if err != nil {
 		return nil, err
 	}
-	return mappings, nil
+	return cfg.GroupMappings, nil
 }
 
-// SetOIDCGroupMappings replaces the entire OIDC group mapping table via PUT /api/v1/admin/oidc/group-mapping.
-func (c *Client) SetOIDCGroupMappings(ctx context.Context, mappings []OIDCGroupMapping) ([]OIDCGroupMapping, error) {
-	var result []OIDCGroupMapping
-	if err := c.Put(ctx, "/api/v1/admin/oidc/group-mapping", mappings, &result); err != nil {
+// SetOIDCGroupMappings replaces the OIDC group mapping configuration via PUT /api/v1/admin/oidc/group-mapping.
+func (c *Client) SetOIDCGroupMappings(ctx context.Context, input OIDCGroupMappingInput) (*OIDCConfig, error) {
+	var result OIDCConfig
+	if err := c.Put(ctx, "/api/v1/admin/oidc/group-mapping", input, &result); err != nil {
 		return nil, err
 	}
-	return result, nil
+	return &result, nil
 }

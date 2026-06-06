@@ -17,8 +17,8 @@ type APIKeysDataSource struct {
 }
 
 type APIKeysDataSourceModel struct {
-	UserID  types.String   `tfsdk:"user_id"`
-	APIKeys []APIKeyDSItem `tfsdk:"api_keys"`
+	OrganizationID types.String   `tfsdk:"organization_id"`
+	APIKeys        []APIKeyDSItem `tfsdk:"api_keys"`
 }
 
 type APIKeyDSItem struct {
@@ -43,10 +43,10 @@ func (d *APIKeysDataSource) Metadata(_ context.Context, req datasource.MetadataR
 
 func (d *APIKeysDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Lists API keys, optionally filtered by user.",
+		Description: "Lists API keys, optionally filtered by organization.",
 		Attributes: map[string]schema.Attribute{
-			"user_id": schema.StringAttribute{
-				Description: "Filter by user UUID.",
+			"organization_id": schema.StringAttribute{
+				Description: "Filter by organization UUID.",
 				Optional:    true,
 			},
 			"api_keys": schema.ListNestedAttribute{
@@ -93,7 +93,7 @@ func (d *APIKeysDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	keys, err := d.client.ListAPIKeys(ctx, config.UserID.ValueString())
+	keys, err := d.client.ListAPIKeys(ctx, config.OrganizationID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Error Listing API Keys", err.Error())
 		return

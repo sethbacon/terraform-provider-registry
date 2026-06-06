@@ -38,10 +38,10 @@ func (c *Client) DeleteAPIKey(ctx context.Context, id string) error {
 	return c.Delete(ctx, "/api/v1/apikeys/"+id)
 }
 
-func (c *Client) ListAPIKeys(ctx context.Context, userID string) ([]APIKey, error) {
+func (c *Client) ListAPIKeys(ctx context.Context, organizationID string) ([]APIKey, error) {
 	path := "/api/v1/apikeys"
-	if userID != "" {
-		path += BuildQuery(map[string]string{"user_id": userID})
+	if organizationID != "" {
+		path += BuildQuery(map[string]string{"organization_id": organizationID})
 	}
 
 	items, err := FetchAllPages(ctx, c, path, "keys")
@@ -58,4 +58,14 @@ func (c *Client) ListAPIKeys(ctx context.Context, userID string) ([]APIKey, erro
 		keys = append(keys, k)
 	}
 	return keys, nil
+}
+
+// RotateAPIKey rotates an API key via POST /api/v1/apikeys/:id/rotate.
+// Returns the new key (raw key value is only available in this response).
+func (c *Client) RotateAPIKey(ctx context.Context, id string) (*CreateAPIKeyResponse, error) {
+	var resp CreateAPIKeyResponse
+	if err := c.Post(ctx, "/api/v1/apikeys/"+id+"/rotate", nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
