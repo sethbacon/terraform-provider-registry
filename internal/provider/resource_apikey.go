@@ -20,16 +20,17 @@ type APIKeyResource struct {
 }
 
 type APIKeyResourceModel struct {
-	ID             types.String `tfsdk:"id"`
-	OrganizationID types.String `tfsdk:"organization_id"`
-	Name           types.String `tfsdk:"name"`
-	Description    types.String `tfsdk:"description"`
-	Scopes         types.List   `tfsdk:"scopes"`
-	ExpiresAt      types.String `tfsdk:"expires_at"`
-	KeyPrefix      types.String `tfsdk:"key_prefix"`
-	Key            types.String `tfsdk:"key"`
-	LastUsedAt     types.String `tfsdk:"last_used_at"`
-	CreatedAt      types.String `tfsdk:"created_at"`
+	ID                       types.String `tfsdk:"id"`
+	OrganizationID           types.String `tfsdk:"organization_id"`
+	Name                     types.String `tfsdk:"name"`
+	Description              types.String `tfsdk:"description"`
+	Scopes                   types.List   `tfsdk:"scopes"`
+	ExpiresAt                types.String `tfsdk:"expires_at"`
+	KeyPrefix                types.String `tfsdk:"key_prefix"`
+	Key                      types.String `tfsdk:"key"`
+	LastUsedAt               types.String `tfsdk:"last_used_at"`
+	ExpiryNotificationSentAt types.String `tfsdk:"expiry_notification_sent_at"`
+	CreatedAt                types.String `tfsdk:"created_at"`
 }
 
 func NewAPIKeyResource() resource.Resource {
@@ -94,6 +95,10 @@ func (r *APIKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			},
 			"last_used_at": schema.StringAttribute{
 				Description: "ISO 8601 timestamp of last key use.",
+				Computed:    true,
+			},
+			"expiry_notification_sent_at": schema.StringAttribute{
+				Description: "ISO 8601 timestamp when the expiry warning email was sent.",
 				Computed:    true,
 			},
 			"created_at": schema.StringAttribute{
@@ -282,6 +287,11 @@ func apikeyToModel(k *client.APIKey) APIKeyResourceModel {
 		model.LastUsedAt = types.StringValue(*k.LastUsedAt)
 	} else {
 		model.LastUsedAt = types.StringNull()
+	}
+	if k.ExpiryNotificationSentAt != nil {
+		model.ExpiryNotificationSentAt = types.StringValue(*k.ExpiryNotificationSentAt)
+	} else {
+		model.ExpiryNotificationSentAt = types.StringNull()
 	}
 	return model
 }

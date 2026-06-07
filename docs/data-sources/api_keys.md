@@ -39,6 +39,7 @@ Read-Only:
 - `created_at` (String) Creation timestamp.
 - `description` (String) Description.
 - `expires_at` (String) Expiration timestamp.
+- `expiry_notification_sent_at` (String) Timestamp when expiry warning email was sent.
 - `id` (String) UUID.
 - `key_prefix` (String) Key prefix for identification.
 - `last_used_at` (String) Last use timestamp.

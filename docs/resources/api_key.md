@@ -44,6 +44,7 @@ output "ci_api_key" {
 ### Read-Only
 
 - `created_at` (String) ISO 8601 timestamp when the key was created.
+- `expiry_notification_sent_at` (String) ISO 8601 timestamp when the expiry warning email was sent.
 - `id` (String) UUID of the API key.
 - `key` (String, Sensitive) The raw API key value. Only populated at creation time — store this securely.
 - `key_prefix` (String) First few characters of the key, for identification.

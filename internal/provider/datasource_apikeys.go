@@ -22,15 +22,16 @@ type APIKeysDataSourceModel struct {
 }
 
 type APIKeyDSItem struct {
-	ID             types.String `tfsdk:"id"`
-	OrganizationID types.String `tfsdk:"organization_id"`
-	Name           types.String `tfsdk:"name"`
-	Description    types.String `tfsdk:"description"`
-	KeyPrefix      types.String `tfsdk:"key_prefix"`
-	Scopes         types.List   `tfsdk:"scopes"`
-	ExpiresAt      types.String `tfsdk:"expires_at"`
-	LastUsedAt     types.String `tfsdk:"last_used_at"`
-	CreatedAt      types.String `tfsdk:"created_at"`
+	ID                       types.String `tfsdk:"id"`
+	OrganizationID           types.String `tfsdk:"organization_id"`
+	Name                     types.String `tfsdk:"name"`
+	Description              types.String `tfsdk:"description"`
+	KeyPrefix                types.String `tfsdk:"key_prefix"`
+	Scopes                   types.List   `tfsdk:"scopes"`
+	ExpiresAt                types.String `tfsdk:"expires_at"`
+	LastUsedAt               types.String `tfsdk:"last_used_at"`
+	ExpiryNotificationSentAt types.String `tfsdk:"expiry_notification_sent_at"`
+	CreatedAt                types.String `tfsdk:"created_at"`
 }
 
 func NewAPIKeysDataSource() datasource.DataSource {
@@ -64,9 +65,10 @@ func (d *APIKeysDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 							ElementType: types.StringType,
 							Description: "Permission scopes.",
 						},
-						"expires_at":   schema.StringAttribute{Computed: true, Description: "Expiration timestamp."},
-						"last_used_at": schema.StringAttribute{Computed: true, Description: "Last use timestamp."},
-						"created_at":   schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
+						"expires_at":                  schema.StringAttribute{Computed: true, Description: "Expiration timestamp."},
+						"last_used_at":                schema.StringAttribute{Computed: true, Description: "Last use timestamp."},
+						"expiry_notification_sent_at": schema.StringAttribute{Computed: true, Description: "Timestamp when expiry warning email was sent."},
+						"created_at":                  schema.StringAttribute{Computed: true, Description: "Creation timestamp."},
 					},
 				},
 			},
@@ -129,6 +131,11 @@ func (d *APIKeysDataSource) Read(ctx context.Context, req datasource.ReadRequest
 			item.LastUsedAt = types.StringValue(*k.LastUsedAt)
 		} else {
 			item.LastUsedAt = types.StringNull()
+		}
+		if k.ExpiryNotificationSentAt != nil {
+			item.ExpiryNotificationSentAt = types.StringValue(*k.ExpiryNotificationSentAt)
+		} else {
+			item.ExpiryNotificationSentAt = types.StringNull()
 		}
 		items[i] = item
 	}

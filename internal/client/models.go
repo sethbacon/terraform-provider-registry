@@ -221,17 +221,18 @@ type UpdateMemberRequest struct {
 
 // APIKey represents a registry API key (token never returned after creation).
 type APIKey struct {
-	ID             string   `json:"id"`
-	UserID         *string  `json:"user_id,omitempty"`
-	OrganizationID string   `json:"organization_id"`
-	Name           string   `json:"name"`
-	Description    *string  `json:"description,omitempty"`
-	KeyPrefix      string   `json:"key_prefix"`
-	Scopes         []string `json:"scopes"`
-	ExpiresAt      *string  `json:"expires_at,omitempty"`
-	LastUsedAt     *string  `json:"last_used_at,omitempty"`
-	CreatedAt      string   `json:"created_at"`
-	UserName       *string  `json:"user_name,omitempty"`
+	ID                       string   `json:"id"`
+	UserID                   *string  `json:"user_id,omitempty"`
+	OrganizationID           string   `json:"organization_id"`
+	Name                     string   `json:"name"`
+	Description              *string  `json:"description,omitempty"`
+	KeyPrefix                string   `json:"key_prefix"`
+	Scopes                   []string `json:"scopes"`
+	ExpiresAt                *string  `json:"expires_at,omitempty"`
+	LastUsedAt               *string  `json:"last_used_at,omitempty"`
+	ExpiryNotificationSentAt *string  `json:"expiry_notification_sent_at,omitempty"`
+	CreatedAt                string   `json:"created_at"`
+	UserName                 *string  `json:"user_name,omitempty"`
 }
 
 // CreateAPIKeyRequest is the payload for creating an API key.
