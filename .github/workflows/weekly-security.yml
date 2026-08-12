@@ -211,6 +211,22 @@ jobs:
             const title = `OSV-Scanner: vulnerabilities found — ${today}`;
 
             if (!existing) {
+              // The label is the dedupe key. If it does not exist yet, issues.create
+              // drops it silently and the next run would open another issue instead of
+              // finding this one, so make sure it exists before relying on it.
+              try {
+                await github.rest.issues.getLabel({ ...repo, name: LABEL });
+              } catch (err) {
+                if (err.status !== 404) throw err;
+                await github.rest.issues.createLabel({
+                  ...repo,
+                  name: LABEL,
+                  color: 'B60205',
+                  description: 'Tracking issue maintained by the weekly OSV-Scanner job',
+                });
+                core.info(`Created missing '${LABEL}' label.`);
+              }
+
               const { data: created } = await github.rest.issues.create({
                 ...repo,
                 title,
