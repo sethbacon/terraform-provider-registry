@@ -30,29 +30,248 @@ jobs:
           scan-args: |-
             --recursive
             .
-            --format=table
+            --format=json
+            --output=osv-results.json
 
-      - name: Create issue on new vulnerabilities
-        if: steps.osv.outcome == 'failure'
+      # Files ONE tracking issue, identified by the `osv-report` label rather than
+      # by title (the title carries a date). The issue body names the advisories, so
+      # it can be triaged without opening a workflow log; it is rewritten in place
+      # while findings persist and closed when a scan comes back clean.
+      - name: Report OSV findings
+        if: always() && steps.osv.outcome != 'skipped'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
         with:
           script: |
-            const title = `OSV-Scanner: vulnerabilities found — ${new Date().toISOString().slice(0,10)}`;
+            const fs = require('fs');
+            const crypto = require('crypto');
+
+            const LABEL = 'osv-report';
+            const today = new Date().toISOString().slice(0, 10);
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const repo = { owner: context.repo.owner, repo: context.repo.repo };
+
+            let scan;
+            try {
+              scan = JSON.parse(fs.readFileSync('osv-results.json', 'utf8'));
+            } catch (err) {
+              core.setFailed(`Could not read osv-results.json (${err.message}). The scan step did not produce a report, so findings could not be triaged.`);
+              return;
+            }
+
+            // osv-scanner runs Go call-graph analysis. A group whose every advisory is
+            // marked `called: false` is not reachable from this codebase; the scanner
+            // itself omits those from its table and from its exit code, so they are
+            // reported here as context only and never open an issue on their own.
+            const isReachable = (group) => {
+              const analysis = group.experimental_analysis;
+              if (!analysis) return true;
+              return Object.values(analysis).some((a) => a.called && !a.unimportant);
+            };
+
+            const fixedVersions = (pkgName, vuln) => {
+              const out = new Set();
+              for (const affected of vuln?.affected ?? []) {
+                if (affected.package?.name !== pkgName) continue;
+                for (const range of affected.ranges ?? []) {
+                  for (const event of range.events ?? []) {
+                    if (event.fixed) out.add(event.fixed);
+                  }
+                }
+              }
+              return [...out].join(', ');
+            };
+
+            const reachable = [];
+            const unreachable = [];
+            for (const result of scan.results ?? []) {
+              const source = result.source?.path ?? '';
+              for (const pkg of result.packages ?? []) {
+                const name = pkg.package?.name ?? '(unknown)';
+                const version = pkg.package?.version ?? '(unknown)';
+                const byId = new Map((pkg.vulnerabilities ?? []).map((v) => [v.id, v]));
+                for (const group of pkg.groups ?? []) {
+                  const id = (group.ids ?? [])[0];
+                  if (!id) continue;
+                  const vuln = byId.get(id);
+                  const entry = {
+                    id,
+                    aliases: (group.aliases ?? []).filter((a) => a !== id),
+                    severity: group.max_severity || '—',
+                    pkg: name,
+                    version,
+                    fixed: fixedVersions(name, vuln) || '—',
+                    summary: vuln?.summary ?? '',
+                    source,
+                  };
+                  (isReachable(group) ? reachable : unreachable).push(entry);
+                }
+              }
+            }
+
+            const byPkgThenId = (a, b) => `${a.pkg}${a.id}`.localeCompare(`${b.pkg}${b.id}`);
+            reachable.sort(byPkgThenId);
+            unreachable.sort(byPkgThenId);
+
+            // Stable across runs: changes only when the finding set itself changes,
+            // so a persisting set updates the issue instead of opening another one.
+            const fingerprint = crypto
+              .createHash('sha256')
+              .update(reachable.map((f) => `${f.id}@${f.pkg}@${f.version}`).join(';'))
+              .digest('hex')
+              .slice(0, 12);
+
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              ...repo,
+              state: 'open',
+              labels: LABEL,
+              per_page: 100,
+            });
+            const existing = openIssues.find((i) => !i.pull_request);
+
+            // ── Clean scan: resolve the tracking issue instead of leaving it open ──
+            if (reachable.length === 0) {
+              core.summary.addHeading('OSV-Scanner: clean', 2);
+              core.summary.addRaw(`No reachable advisories. ${unreachable.length} unreachable finding(s) suppressed.`);
+              await core.summary.write();
+
+              if (!existing) {
+                core.info('No reachable advisories and no open OSV issue. Nothing to do.');
+                return;
+              }
+              await github.rest.issues.createComment({
+                ...repo,
+                issue_number: existing.number,
+                body: [
+                  `**Resolved — OSV-Scanner reported no reachable advisories on ${today}.**`,
+                  '',
+                  `Verified by [this run](${runUrl}) against \`${context.sha}\`.`,
+                  unreachable.length
+                    ? `\n${unreachable.length} advisory/advisories remain in the dependency tree but are not reachable from this codebase (call-graph analysis), so they are not tracked here.`
+                    : '',
+                  '',
+                  'Closing automatically. A future scan with reachable findings will open a new tracking issue.',
+                ].join('\n'),
+              });
+              await github.rest.issues.update({
+                ...repo,
+                issue_number: existing.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+              core.info(`Closed #${existing.number} — scan is clean.`);
+              return;
+            }
+
+            // ── Findings present: build an issue body that names them ──
+            const table = [
+              '| Advisory | Severity | Package | Version | Fixed in |',
+              '| --- | --- | --- | --- | --- |',
+              ...reachable.map(
+                (f) => `| [${f.id}](https://osv.dev/${f.id}) | ${f.severity} | \`${f.pkg}\` | \`${f.version}\` | \`${f.fixed}\` |`,
+              ),
+            ];
+
+            const details = reachable
+              .filter((f) => f.summary || f.aliases.length)
+              .map((f) => {
+                const alias = f.aliases.length ? ` _(aliases: ${f.aliases.join(', ')})_` : '';
+                return `- **${f.id}** — ${f.summary || 'no summary published'}${alias}`;
+              });
+
+            const pkgCount = new Set(reachable.map((f) => f.pkg)).size;
             const body = [
               '## OSV-Scanner Vulnerability Report',
               '',
-              `**Workflow run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `**${reachable.length} reachable advisory/advisories across ${pkgCount} package(s).**`,
               '',
-              'OSV-Scanner found known vulnerabilities in `go.sum`. Please review the workflow logs and update affected dependencies.',
+              `- **Last confirmed:** ${today} ([run](${runUrl}), commit \`${context.sha.slice(0, 7)}\`)`,
+              '',
+              ...table,
+              '',
+              ...(details.length ? ['<details><summary>Advisory details</summary>', '', ...details, '', '</details>', ''] : []),
+              ...(unreachable.length
+                ? [
+                    `<details><summary>${unreachable.length} advisory/advisories present but not reachable (call-graph analysis) — not counted above</summary>`,
+                    '',
+                    ...unreachable.map((f) => `- ${f.id} — \`${f.pkg}@${f.version}\` (fixed in \`${f.fixed}\`)`),
+                    '',
+                    '</details>',
+                    '',
+                  ]
+                : []),
+              'Update the affected dependencies to at least the listed fixed version. This issue is maintained automatically by the weekly scan: it is rewritten in place while these findings persist, and closed once a scan reports no reachable advisories.',
+              '',
+              `<!-- osv-fingerprint: ${fingerprint} -->`,
             ].join('\n');
 
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title,
-              body,
-              labels: ['security', 'dependencies'],
+            core.summary.addHeading(`OSV-Scanner: ${reachable.length} reachable advisory/advisories`, 2);
+            core.summary.addRaw(table.join('\n'));
+            await core.summary.write();
+
+            const title = `OSV-Scanner: vulnerabilities found — ${today}`;
+
+            if (!existing) {
+              // The label is the dedupe key. If it does not exist yet, issues.create
+              // drops it silently and the next run would open another issue instead of
+              // finding this one, so make sure it exists before relying on it.
+              try {
+                await github.rest.issues.getLabel({ ...repo, name: LABEL });
+              } catch (err) {
+                if (err.status !== 404) throw err;
+                await github.rest.issues.createLabel({
+                  ...repo,
+                  name: LABEL,
+                  color: 'B60205',
+                  description: 'Tracking issue maintained by the weekly OSV-Scanner job',
+                });
+                core.info(`Created missing '${LABEL}' label.`);
+              }
+
+              const { data: created } = await github.rest.issues.create({
+                ...repo,
+                title,
+                body,
+                labels: [LABEL, 'security', 'dependencies'],
+              });
+              core.info(`Opened #${created.number} with ${reachable.length} advisory/advisories.`);
+              return;
+            }
+
+            const previous = (existing.body ?? '').match(/<!-- osv-fingerprint: ([0-9a-f]+) -->/);
+            const unchanged = previous && previous[1] === fingerprint;
+
+            await github.rest.issues.update({ ...repo, issue_number: existing.number, title, body });
+
+            if (unchanged) {
+              // Same finding set as last week — refresh the issue quietly rather than
+              // opening a duplicate or adding a weekly comment nobody reads.
+              core.info(`#${existing.number} refreshed; finding set unchanged (${fingerprint}).`);
+              return;
+            }
+
+            // The set actually changed — that is the only event worth a notification.
+            const previousIds = new Set(
+              [...(existing.body ?? '').matchAll(/\[((?:GHSA|CVE|GO)-[0-9A-Za-z-]+)\]\(https:\/\/osv\.dev\//g)].map((m) => m[1]),
+            );
+            const currentIds = new Set(reachable.map((f) => f.id));
+            const added = [...currentIds].filter((id) => !previousIds.has(id));
+            const removed = [...previousIds].filter((id) => !currentIds.has(id));
+
+            await github.rest.issues.createComment({
+              ...repo,
+              issue_number: existing.number,
+              body: [
+                `**Finding set changed as of ${today}** ([run](${runUrl})).`,
+                '',
+                added.length ? `- Newly reported: ${added.map((id) => `\`${id}\``).join(', ')}` : '',
+                removed.length ? `- No longer reported: ${removed.map((id) => `\`${id}\``).join(', ')}` : '',
+                '',
+                'The issue body above has been updated to the current set.',
+              ]
+                .filter((line) => line !== '')
+                .join('\n'),
             });
+            core.info(`#${existing.number} updated: +${added.length} / -${removed.length}.`);
 
   # ── CodeQL Analysis ───────────────────────────────────
   codeql:
