@@ -27,9 +27,24 @@ jobs:
         uses: google/osv-scanner-action/osv-scanner-action@9a498708959aeaef5ef730655706c5a1df1edbc2 # v2.3.8
         continue-on-error: true
         with:
+          # --no-call-analysis=go is deliberate. The scanner image ships its own Go
+          # toolchain (1.26.2 in v2.3.8) and invokes it with GOTOOLCHAIN=local, so it
+          # cannot build a module whose `go` directive names a newer release — our
+          # go.mod is well past it. Its internal govulncheck pass then aborts with
+          # "go.mod requires go >= 1.26.x (running go 1.26.2; GOTOOLCHAIN=local)".
+          #
+          # That abort was worse than useless: the pass produced no call graph, yet
+          # every finding still defaulted to "reachable", so the tracking issue
+          # asserted call-graph reachability that had never been computed.
+          #
+          # Reachability is now the `govulncheck` job's responsibility below — it
+          # resolves its toolchain from go.mod, so it always matches the module.
+          # This step does the flat known-vulnerability sweep of go.mod/go.sum,
+          # which needs no toolchain at all.
           scan-args: |-
             --recursive
             .
+            --no-call-analysis=go
             --format=json
             --output=osv-results.json
 
@@ -40,6 +55,8 @@ jobs:
       - name: Report OSV findings
         if: always() && steps.osv.outcome != 'skipped'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
+        env:
+          OSV_OUTCOME: ${{ steps.osv.outcome }}
         with:
           script: |
             const fs = require('fs');
@@ -58,11 +75,12 @@ jobs:
               return;
             }
 
-            // osv-scanner runs Go call-graph analysis. A group whose every advisory is
-            // marked `called: false` is not reachable from this codebase; the scanner
-            // itself omits those from its table and from its exit code, so they are
-            // reported here as context only and never open an issue on their own.
-            const isReachable = (group) => {
+            // Go call analysis is disabled for this step (see the scan-args comment),
+            // so these findings are "present in go.mod/go.sum", NOT "reachable". Do not
+            // reintroduce reachability language here: with no call graph, `analysis` is
+            // absent and everything falls through to true, which is exactly how this
+            // job once asserted reachability it had never computed.
+            const isCounted = (group) => {
               const analysis = group.experimental_analysis;
               if (!analysis) return true;
               return Object.values(analysis).some((a) => a.called && !a.unimportant);
@@ -81,8 +99,8 @@ jobs:
               return [...out].join(', ');
             };
 
-            const reachable = [];
-            const unreachable = [];
+            const counted = [];
+            const notCounted = [];
             for (const result of scan.results ?? []) {
               const source = result.source?.path ?? '';
               for (const pkg of result.packages ?? []) {
@@ -103,20 +121,38 @@ jobs:
                     summary: vuln?.summary ?? '',
                     source,
                   };
-                  (isReachable(group) ? reachable : unreachable).push(entry);
+                  (isCounted(group) ? counted : notCounted).push(entry);
                 }
               }
             }
 
             const byPkgThenId = (a, b) => `${a.pkg}${a.id}`.localeCompare(`${b.pkg}${b.id}`);
-            reachable.sort(byPkgThenId);
-            unreachable.sort(byPkgThenId);
+            counted.sort(byPkgThenId);
+            notCounted.sort(byPkgThenId);
+
+            // ── Tell "vulnerabilities found" apart from "the scanner broke" ──
+            // osv-scanner exits 1 when it finds vulnerabilities and 127 (or another
+            // non-zero) on its own errors. `continue-on-error` collapses both into
+            // outcome == 'failure', and GitHub does not expose the raw exit code — but
+            // the report itself distinguishes them: a genuine exit 1 always carries at
+            // least one finding. A non-zero exit with a completely empty report means
+            // the scan errored, and reporting that as "clean" would silently close the
+            // tracking issue on a scan that never actually ran.
+            const totalFindings = counted.length + notCounted.length;
+            if (process.env.OSV_OUTCOME === 'failure' && totalFindings === 0) {
+              core.setFailed(
+                'OSV-Scanner exited non-zero but reported no findings at all. That is a scanner ' +
+                  'error (exit 127 or similar), not a clean dependency tree, so this run is not ' +
+                  'being reported as clean and the tracking issue is left as-is. See the scan step log.',
+              );
+              return;
+            }
 
             // Stable across runs: changes only when the finding set itself changes,
             // so a persisting set updates the issue instead of opening another one.
             const fingerprint = crypto
               .createHash('sha256')
-              .update(reachable.map((f) => `${f.id}@${f.pkg}@${f.version}`).join(';'))
+              .update(counted.map((f) => `${f.id}@${f.pkg}@${f.version}`).join(';'))
               .digest('hex')
               .slice(0, 12);
 
@@ -129,27 +165,27 @@ jobs:
             const existing = openIssues.find((i) => !i.pull_request);
 
             // ── Clean scan: resolve the tracking issue instead of leaving it open ──
-            if (reachable.length === 0) {
+            if (counted.length === 0) {
               core.summary.addHeading('OSV-Scanner: clean', 2);
-              core.summary.addRaw(`No reachable advisories. ${unreachable.length} unreachable finding(s) suppressed.`);
+              core.summary.addRaw(`No advisories in go.mod/go.sum. ${notCounted.length} finding(s) filtered by the scanner.`);
               await core.summary.write();
 
               if (!existing) {
-                core.info('No reachable advisories and no open OSV issue. Nothing to do.');
+                core.info('No advisories reported and no open OSV issue. Nothing to do.');
                 return;
               }
               await github.rest.issues.createComment({
                 ...repo,
                 issue_number: existing.number,
                 body: [
-                  `**Resolved — OSV-Scanner reported no reachable advisories on ${today}.**`,
+                  `**Resolved — OSV-Scanner reported no known vulnerabilities in \`go.mod\`/\`go.sum\` on ${today}.**`,
                   '',
                   `Verified by [this run](${runUrl}) against \`${context.sha}\`.`,
-                  unreachable.length
-                    ? `\n${unreachable.length} advisory/advisories remain in the dependency tree but are not reachable from this codebase (call-graph analysis), so they are not tracked here.`
+                  notCounted.length
+                    ? `\n${notCounted.length} advisory/advisories were filtered out by the scanner (suppressed in \`osv-scanner.toml\` or marked unimportant), so they are not tracked here.`
                     : '',
                   '',
-                  'Closing automatically. A future scan with reachable findings will open a new tracking issue.',
+                  'Closing automatically. A future scan with findings will open a new tracking issue.',
                 ].join('\n'),
               });
               await github.rest.issues.update({
@@ -166,45 +202,47 @@ jobs:
             const table = [
               '| Advisory | Severity | Package | Version | Fixed in |',
               '| --- | --- | --- | --- | --- |',
-              ...reachable.map(
+              ...counted.map(
                 (f) => `| [${f.id}](https://osv.dev/${f.id}) | ${f.severity} | \`${f.pkg}\` | \`${f.version}\` | \`${f.fixed}\` |`,
               ),
             ];
 
-            const details = reachable
+            const details = counted
               .filter((f) => f.summary || f.aliases.length)
               .map((f) => {
                 const alias = f.aliases.length ? ` _(aliases: ${f.aliases.join(', ')})_` : '';
                 return `- **${f.id}** — ${f.summary || 'no summary published'}${alias}`;
               });
 
-            const pkgCount = new Set(reachable.map((f) => f.pkg)).size;
+            const pkgCount = new Set(counted.map((f) => f.pkg)).size;
             const body = [
               '## OSV-Scanner Vulnerability Report',
               '',
-              `**${reachable.length} reachable advisory/advisories across ${pkgCount} package(s).**`,
+              `**${counted.length} known advisory/advisories across ${pkgCount} package(s) in \`go.mod\`/\`go.sum\`.**`,
+              '',
+              'These are advisories against modules this repo requires. This job does *not* compute reachability — the `govulncheck` job in the same workflow does, and its log says which findings are reachable by call graph (symbol results), merely imported (package results), or only present in the module graph (module results). Check there before deciding urgency.',
               '',
               `- **Last confirmed:** ${today} ([run](${runUrl}), commit \`${context.sha.slice(0, 7)}\`)`,
               '',
               ...table,
               '',
               ...(details.length ? ['<details><summary>Advisory details</summary>', '', ...details, '', '</details>', ''] : []),
-              ...(unreachable.length
+              ...(notCounted.length
                 ? [
-                    `<details><summary>${unreachable.length} advisory/advisories present but not reachable (call-graph analysis) — not counted above</summary>`,
+                    `<details><summary>${notCounted.length} advisory/advisories filtered out by the scanner — not counted above</summary>`,
                     '',
-                    ...unreachable.map((f) => `- ${f.id} — \`${f.pkg}@${f.version}\` (fixed in \`${f.fixed}\`)`),
+                    ...notCounted.map((f) => `- ${f.id} — \`${f.pkg}@${f.version}\` (fixed in \`${f.fixed}\`)`),
                     '',
                     '</details>',
                     '',
                   ]
                 : []),
-              'Update the affected dependencies to at least the listed fixed version. This issue is maintained automatically by the weekly scan: it is rewritten in place while these findings persist, and closed once a scan reports no reachable advisories.',
+              'Update the affected dependencies to at least the listed fixed version. Where an advisory has no fixed version and is genuinely not reachable, suppress it by ID in `osv-scanner.toml` with the reasoning written down. This issue is maintained automatically by the weekly scan: it is rewritten in place while these findings persist, and closed once a scan comes back clean.',
               '',
               `<!-- osv-fingerprint: ${fingerprint} -->`,
             ].join('\n');
 
-            core.summary.addHeading(`OSV-Scanner: ${reachable.length} reachable advisory/advisories`, 2);
+            core.summary.addHeading(`OSV-Scanner: ${counted.length} known advisory/advisories`, 2);
             core.summary.addRaw(table.join('\n'));
             await core.summary.write();
 
@@ -233,7 +271,7 @@ jobs:
                 body,
                 labels: [LABEL, 'security', 'dependencies'],
               });
-              core.info(`Opened #${created.number} with ${reachable.length} advisory/advisories.`);
+              core.info(`Opened #${created.number} with ${counted.length} advisory/advisories.`);
               return;
             }
 
@@ -253,7 +291,7 @@ jobs:
             const previousIds = new Set(
               [...(existing.body ?? '').matchAll(/\[((?:GHSA|CVE|GO)-[0-9A-Za-z-]+)\]\(https:\/\/osv\.dev\//g)].map((m) => m[1]),
             );
-            const currentIds = new Set(reachable.map((f) => f.id));
+            const currentIds = new Set(counted.map((f) => f.id));
             const added = [...currentIds].filter((id) => !previousIds.has(id));
             const removed = [...previousIds].filter((id) => !currentIds.has(id));
 
@@ -272,6 +310,39 @@ jobs:
                 .join('\n'),
             });
             core.info(`#${existing.number} updated: +${added.length} / -${removed.length}.`);
+
+  # ── Reachability analysis ─────────────────────────────
+  # The OSV job above answers "is a vulnerable module required?"; this one answers
+  # "does our code actually reach it?", which is what decides urgency. It exists as
+  # a separate job on purpose: setup-go resolves the toolchain from go.mod, so it
+  # always matches the module and can build the call graph — unlike the pinned
+  # osv-scanner container, whose bundled Go runs with GOTOOLCHAIN=local and cannot.
+  #
+  # Read the log by section. `=== Symbol Results ===` are reachable by call graph
+  # and are the ones to act on. `=== Package Results ===` are imported but not
+  # called. `=== Module Results ===` are only present in the module graph. Only
+  # symbol results set a non-zero exit, so only they fail this job.
+  govulncheck:
+    name: govulncheck (reachability)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
+
+      - name: Run govulncheck
+        run: govulncheck -show verbose ./...
 
   # ── CodeQL Analysis ───────────────────────────────────
   codeql:
@@ -328,7 +399,7 @@ jobs:
   notify-on-failure:
     name: Create issue on failure
     runs-on: ubuntu-latest
-    needs: [ci, osv-scan, codeql, stale-dependabot]
+    needs: [ci, osv-scan, govulncheck, codeql, stale-dependabot]
     if: failure() && github.event_name == 'schedule'
     permissions:
       issues: write

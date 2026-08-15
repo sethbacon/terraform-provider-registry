@@ -1,0 +1,39 @@
+# OSV-Scanner configuration.
+#
+# Entries here suppress a finding from the weekly scan. Every entry must state
+# WHY, so it can be re-checked rather than re-litigated. Suppress by advisory
+# ID only — never disable a whole package or ecosystem — so both scanners stay
+# live for everything else.
+#
+# Reachability is not decided here. The `govulncheck` job in
+# .github/workflows/weekly-security.yml is this repo's reachability oracle: it
+# resolves its toolchain from go.mod, so it always matches the module and can
+# actually build the call graph. OSV-Scanner does the flat known-vulnerability
+# sweep of go.mod/go.sum, which needs no toolchain at all.
+
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+reason = """
+golang.org/x/crypto/openpgp — unreachable here, and unfixable by construction.
+
+1. No fix exists. The advisory's only range event is `introduced: 0` with no
+   `fixed` event, so no version of golang.org/x/crypto resolves it and no
+   dependency bump can ever clear this finding. OSV reports "Fixed in: —".
+   The package is deprecated and unmaintained upstream; the advisory is a
+   blanket deprecation notice, not a specific defect with a patch.
+
+2. Nothing in this repo imports it. The advisory covers the import paths
+   golang.org/x/crypto/openpgp{,/packet,/armor,/clearsign,/errors,/elgamal,/s2k}.
+   None appear in `go list -deps -test ./...`. golang.org/x/crypto reaches this
+   module only as a test dependency of terraform-plugin-testing/helper/acctest,
+   which pulls golang.org/x/crypto/ssh and its ciphers — not openpgp.
+
+3. Do not be misled by a grep for "openpgp". The tree does contain openpgp
+   packages, but they are github.com/ProtonMail/go-crypto/openpgp — the
+   maintained fork that exists precisely to replace the deprecated x/crypto
+   package. Different module, not covered by this advisory.
+
+Re-check trigger: if OSV ever publishes a `fixed` event for GO-2026-5932, or if
+golang.org/x/crypto/openpgp appears in `go list -deps -test ./...`, delete this
+entry and fix it properly.
+"""
