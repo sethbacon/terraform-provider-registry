@@ -1,0 +1,41 @@
+---
+# Workflow-hardening gate, delegated to 4cloudguru/shared-workflows.
+#
+# Asserts that this repository's workflows ENFORCE four properties rather than
+# conventionally having them: every `uses:` pinned to a full SHA and labelled
+# with the version that SHA is, every job bounded by a timeout, harden-runner
+# running first, and npm installs refusing dependency scripts.
+#
+# The gate lived in exactly one of the fourteen repos until now. Pointed here it
+# found 26, including two `github/codeql-action/*@v4` refs pinned to a MUTABLE
+# TAG -- the reviewed action and the executed action were not the same thing,
+# and a stale "TODO: pin to SHA" comment sat beside them.
+#
+# NOTE: this repository has no zizmor/actionlint workflow at all, unlike the six
+# that call the shared workflow-security definition. That gap is real and is not
+# closed here.
+#
+# script-ref MUST equal the pin on the `uses:` line: the checker is taken from
+# shared-workflows at that commit, so this repo cannot weaken its own gate by
+# editing a local copy -- there is no local copy.
+name: Workflow Hardening
+
+"on":
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-hardening-${{ github.event_name }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workflow-hardening:
+    uses: 4cloudguru/shared-workflows/.github/workflows/workflow-hardening.yml@bc0eaaec5d6f5cf632ef862ff7475da928e32466 # v1.2.0
+    with:
+      script-ref: bc0eaaec5d6f5cf632ef862ff7475da928e32466
