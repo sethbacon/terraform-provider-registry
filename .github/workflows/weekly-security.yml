@@ -37,11 +37,23 @@ jobs:
         uses: google/osv-scanner-action/osv-scanner-action@6e4298ebc4db23e847df9b2e2de2939d6f066c67 # v2.5.1
         continue-on-error: true
         with:
-          # --no-call-analysis=go is deliberate. The scanner image ships its own Go
-          # toolchain (1.26.2 in v2.3.8) and invokes it with GOTOOLCHAIN=local, so it
-          # cannot build a module whose `go` directive names a newer release — our
-          # go.mod is well past it. Its internal govulncheck pass then aborts with
-          # "go.mod requires go >= 1.26.x (running go 1.26.2; GOTOOLCHAIN=local)".
+          # --no-call-analysis=go is deliberate, and internal/cigate asserts it
+          # stays paired with the govulncheck job below.
+          #
+          # The scanner image is built FROM a golang base, so it carries exactly
+          # one Go toolchain, and the official golang images set
+          # GOTOOLCHAIN=local — which forbids downloading or switching to
+          # another. It therefore cannot build a module whose `go` directive
+          # names a newer release, and ours is one.
+          #
+          # Measured 2026-08-27 at the pin above, v2.5.1, by pulling the image
+          # and running the real scanner over a clean export of this repo:
+          # the image reports go1.26.5, this module declares go 1.26.6, and the
+          # internal govulncheck pass aborts with
+          # "go.mod requires go >= 1.26.6 (running go 1.26.5; GOTOOLCHAIN=local)",
+          # exit 127, results array empty. The same run with this flag exits 0.
+          # A newer pin does not fix it: the image will always trail the
+          # toolchain this module builds on.
           #
           # That abort was worse than useless: the pass produced no call graph, yet
           # every finding still defaulted to "reachable", so the tracking issue
