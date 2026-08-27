@@ -133,7 +133,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: go test -v -count=1 -timeout 10m ./internal/client/...
+      # ./internal/cigate holds no product code. It asserts a relationship
+      # between two jobs in weekly-security.yml that is otherwise joined only
+      # by a comment; see internal/cigate/osv_reachability_test.go.
+      - run: go test -v -count=1 -timeout 10m ./internal/client/... ./internal/cigate/...
 
   # Acceptance tests are sharded across 4 parallel jobs to cut wall-clock time.
   # Each shard runs its own isolated Docker stack on a fresh runner — no shared
