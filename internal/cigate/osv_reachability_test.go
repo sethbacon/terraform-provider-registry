@@ -52,9 +52,32 @@ import (
 // module's toolchain, and is listened to.
 
 const (
-	osvAction      = "google/osv-scanner-action"
-	noCallAnalysis = "--no-call-analysis=go"
+	osvActionOfficial = "google/osv-scanner-action"
+	osvActionShared   = "shared-workflows/.github/actions/osv-scan"
+	noCallAnalysis    = "--no-call-analysis=go"
 )
+
+// osvActionDesc names, for error messages, every form the scan step is allowed
+// to take. Kept next to the matcher so a new form cannot be accepted without
+// also being reportable.
+const osvActionDesc = osvActionOfficial + " or " + osvActionShared
+
+// isOSVScanStep reports whether `uses` runs the weekly OSV scan.
+//
+// The step has two accepted forms: the official Docker action, and the shared
+// wrapper around it that reports the scanner's real exit code instead of
+// collapsing it under continue-on-error. Both run the same scanner and take the
+// same `scan-args`, so both are equally valid subjects for this test.
+//
+// Matching on one hard-coded name is precisely how this gate goes vacuous: when
+// the step was re-pointed at the wrapper, `scans` came back empty and the only
+// thing standing between that and a silent pass was the len(scans) == 0 guard
+// below. Every accepted form has to be listed here for that guard to keep
+// meaning "the scan is gone" rather than "the scan was renamed".
+func isOSVScanStep(uses string) bool {
+	return strings.Contains(uses, osvActionOfficial) ||
+		strings.Contains(uses, osvActionShared)
+}
 
 type workflow struct {
 	Jobs map[string]job `yaml:"jobs"`
@@ -300,7 +323,7 @@ func TestOSVScanDelegatesGoReachabilityToAGovulncheckJobThatWorks(t *testing.T) 
 		for jobName, j := range wf.Jobs {
 			where := ".github/workflows/" + name + ":" + jobName
 			for i, s := range j.Steps {
-				if strings.Contains(s.Uses, osvAction) {
+				if isOSVScanStep(s.Uses) {
 					args := strings.Fields(s.with("scan-args"))
 					var roots []string
 					declared := false
@@ -362,7 +385,7 @@ func TestOSVScanDelegatesGoReachabilityToAGovulncheckJobThatWorks(t *testing.T) 
 	// step or the delegate is renamed out of existence, that is the failure this
 	// test exists for -- not a reason for it to find nothing and pass.
 	if len(scans) == 0 {
-		t.Fatalf("no %s step in any workflow; the weekly OSV scan this test is about does not exist", osvAction)
+		t.Fatalf("no %s step in any workflow; the weekly OSV scan this test is about does not exist", osvActionDesc)
 	}
 	if len(delegates) == 0 {
 		t.Fatalf("no govulncheck invocation in any workflow; nothing in this repository computes Go reachability")
@@ -387,7 +410,7 @@ func TestOSVScanDelegatesGoReachabilityToAGovulncheckJobThatWorks(t *testing.T) 
 			}
 		}
 		if scanning == 0 {
-			t.Errorf("%s#scanned: no %s step scans this module", goMod, osvAction)
+			t.Errorf("%s#scanned: no %s step scans this module", goMod, osvActionDesc)
 		}
 
 		var serving []delegate

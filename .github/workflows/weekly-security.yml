@@ -34,8 +34,20 @@ jobs:
 
       - name: Run OSV-Scanner
         id: osv
-        uses: google/osv-scanner-action/osv-scanner-action@6e4298ebc4db23e847df9b2e2de2939d6f066c67 # v2.5.1
-        continue-on-error: true
+        # THE SHARED ACTION, NOT THE OFFICIAL ONE, AND NO continue-on-error (#894).
+        #
+        # `continue-on-error` was the defect: it collapsed exit 1 ("ran, found
+        # something") and the error exits (127 general error, 128 no packages) into
+        # one `outcome == 'failure'`, and it rewrote a failed step's `conclusion` to
+        # `success`. A scanner that had stopped working produced exactly the same
+        # green as one that ran and found nothing, in the run history and in the API
+        # alike.
+        #
+        # The shared action reports the exit code it ACTUALLY got and exposes it as
+        # `outputs.exit-code`, `outputs.findings` and `outputs.errored`, so the steps
+        # below no longer have to infer the verdict from the artifact -- and a
+        # scanner error fails the job immediately rather than passing for clean.
+        uses: 4cloudguru/shared-workflows/.github/actions/osv-scan@3aae0966a70daa50bcfe741ef07e20e86c814af4 # v1.20.2
         with:
           # --no-call-analysis=go is deliberate, and internal/cigate asserts it
           # stays paired with the govulncheck job below.
@@ -78,7 +90,9 @@ jobs:
         if: always() && steps.osv.outcome != 'skipped'
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v7
         env:
-          OSV_OUTCOME: ${{ steps.osv.outcome }}
+          # `outputs.errored`, not `outcome`: the scanner's own error exits are
+          # now reported directly instead of being inferred from an empty report.
+          OSV_ERRORED: ${{ steps.osv.outputs.errored }}
         with:
           script: |
             const fs = require('fs');
@@ -153,15 +167,14 @@ jobs:
             notCounted.sort(byPkgThenId);
 
             // ── Tell "vulnerabilities found" apart from "the scanner broke" ──
-            // osv-scanner exits 1 when it finds vulnerabilities and 127 (or another
-            // non-zero) on its own errors. `continue-on-error` collapses both into
-            // outcome == 'failure', and GitHub does not expose the raw exit code — but
-            // the report itself distinguishes them: a genuine exit 1 always carries at
-            // least one finding. A non-zero exit with a completely empty report means
-            // the scan errored, and reporting that as "clean" would silently close the
-            // tracking issue on a scan that never actually ran.
+            // This used to be inferred: `continue-on-error` collapsed exit 1
+            // ("found something") and the error exits into one outcome, GitHub
+            // exposed the raw exit code nowhere, so the only tell left was that a
+            // genuine exit 1 always carries at least one finding. The shared scan
+            // action reports the exit code it actually got, so the inference is
+            // gone and the scanner's own verdict is read directly (#894).
             const totalFindings = counted.length + notCounted.length;
-            if (process.env.OSV_OUTCOME === 'failure' && totalFindings === 0) {
+            if (process.env.OSV_ERRORED === 'true') {
               core.setFailed(
                 'OSV-Scanner exited non-zero but reported no findings at all. That is a scanner ' +
                   'error (exit 127 or similar), not a clean dependency tree, so this run is not ' +
