@@ -28,7 +28,7 @@ jobs:
       #   written without one fails closed on its first run; audit is what produces
       #   that list
       - name: Harden the runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -56,7 +56,7 @@ jobs:
       #   written without one fails closed on its first run; audit is what produces
       #   that list
       - name: Harden the runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -82,7 +82,7 @@ jobs:
       #   repository, so no endpoint baseline exists and a block policy written
       #   without one fails closed on its first run; audit is what produces that list
       - name: Harden the runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -94,7 +94,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install oapi-codegen
-        uses: 4cloudguru/shared-workflows/.github/actions/go-install@3dac549c7e4fe4a0dc54aaf9ed187b6da2c6eab9 # v1.15.0
+        uses: 4cloudguru/shared-workflows/.github/actions/go-install@0f121ce84fcd06966716146824e9764bd085936e # v1.17.0
         with:
           package: github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.7.0
       - name: Log in to GHCR
@@ -125,7 +125,7 @@ jobs:
       #   written without one fails closed on its first run; audit is what produces
       #   that list
       - name: Harden the runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -169,7 +169,7 @@ jobs:
       #   repository, so no endpoint baseline exists and a block policy written
       #   without one fails closed on its first run; audit is what produces that list
       - name: Harden the runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -241,7 +241,7 @@ jobs:
       #   repository, so no endpoint baseline exists and a block policy written
       #   without one fails closed on its first run; audit is what produces that list
       - name: Harden the runner
-        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
       - name: Verify all shards succeeded
