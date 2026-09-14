@@ -94,7 +94,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install oapi-codegen
-        uses: 4cloudguru/shared-workflows/.github/actions/go-install@0f121ce84fcd06966716146824e9764bd085936e # v1.17.0
+        uses: 4cloudguru/shared-workflows/.github/actions/go-install@c52ee27a03d06eee94e13c7bb56385d4edfb94d4 # v1.28.0
         with:
           package: github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.7.0
       - name: Log in to GHCR
