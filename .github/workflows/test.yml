@@ -136,7 +136,12 @@ jobs:
       # ./internal/cigate holds no product code. It asserts a relationship
       # between two jobs in weekly-security.yml that is otherwise joined only
       # by a comment; see internal/cigate/osv_reachability_test.go.
-      - run: go test -v -count=1 -timeout 10m ./internal/client/... ./internal/cigate/...
+      #
+      # ./internal/provider is mostly acceptance tests, which skip themselves
+      # without TF_ACC, and the acceptance shards below select tests by exact
+      # name, so its unit tests (resource methods driven against an httptest
+      # backend, semver) ran nowhere until they were listed here.
+      - run: go test -v -count=1 -timeout 10m ./internal/client/... ./internal/cigate/... ./internal/provider/...
 
   # Acceptance tests are sharded across 4 parallel jobs to cut wall-clock time.
   # Each shard runs its own isolated Docker stack on a fresh runner — no shared

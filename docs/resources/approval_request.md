@@ -3,19 +3,22 @@
 page_title: "registry_approval_request Resource - registry"
 subcategory: ""
 description: |-
-  Creates a mirror approval request. The review (approve/reject) is performed by an admin separately.
+  Creates a mirror approval request for a provider namespace (or a single provider) on a mirror. The review (approve/reject) is performed by an admin separately. The registry only records requests and their review status: mirror sync and pull-through do not check them, so a pending, approved or rejected request has no effect on what the mirror fetches or serves. To control what a mirror fetches, use the namespace_filter, provider_filter, version_filter and platform_filter attributes of registry_mirror. To review versions before Terraform clients can install them, use the registry's version approvals (the mirror configuration's own approval setting, which registry_mirror does not manage yet). Approval requests cannot be deleted: the registry keeps every request as a review record and has no API to delete or withdraw one. Destroying this resource, or replacing it because an argument changed, only removes it from Terraform state (with a warning); the request stays in the registry with its current review status, and a pending request can still be approved or rejected by an admin.
 ---
 
 # registry_approval_request (Resource)
 
-Creates a mirror approval request. The review (approve/reject) is performed by an admin separately.
+Creates a mirror approval request for a provider namespace (or a single provider) on a mirror. The review (approve/reject) is performed by an admin separately. The registry only records requests and their review status: mirror sync and pull-through do not check them, so a pending, approved or rejected request has no effect on what the mirror fetches or serves. To control what a mirror fetches, use the `namespace_filter`, `provider_filter`, `version_filter` and `platform_filter` attributes of `registry_mirror`. To review versions before Terraform clients can install them, use the registry's version approvals (the mirror configuration's own approval setting, which `registry_mirror` does not manage yet). Approval requests cannot be deleted: the registry keeps every request as a review record and has no API to delete or withdraw one. Destroying this resource, or replacing it because an argument changed, only removes it from Terraform state (with a warning); the request stays in the registry with its current review status, and a pending request can still be approved or rejected by an admin.
 
 ## Example Usage
 
 ```terraform
+# Advisory only: the registry records the request and its review status, but
+# mirror sync and pull-through do not check it.
 resource "registry_approval_request" "hashicorp_mirror" {
-  mirror_id      = registry_mirror.hashicorp.id
-  justification  = "Need to sync HashiCorp providers for production deployment"
+  mirror_id          = registry_mirror.hashicorp.id
+  provider_namespace = "hashicorp"
+  justification      = "Need to sync HashiCorp providers for production deployment"
 }
 ```
 
@@ -24,14 +27,27 @@ resource "registry_approval_request" "hashicorp_mirror" {
 
 ### Required
 
-- `justification` (String) Justification for the request.
 - `mirror_id` (String) UUID of the mirror this approval request is for.
+- `provider_namespace` (String) Provider namespace to request access for (e.g., 'hashicorp').
+
+### Optional
+
+- `justification` (String) Justification / reason for the request.
+- `provider_name` (String) Specific provider name within the namespace. Omit to request access for the entire namespace.
 
 ### Read-Only
 
+- `auto_approved` (Boolean) Whether the request was auto-approved. The registry does not currently auto-approve requests, so this is false.
 - `created_at` (String) ISO 8601 timestamp when the request was created.
+- `expires_at` (String) ISO 8601 timestamp when an approved request expires; null if it does not expire.
 - `id` (String) UUID of the approval request.
+- `mirror_name` (String) Name of the mirror this approval request applies to.
+- `organization_id` (String) UUID of the organization this request was scoped to (null for global).
+- `requested_by` (String) UUID of the user who created the request.
+- `requested_by_name` (String) Display name of the requesting user.
 - `review_note` (String) Note from the reviewer.
 - `review_status` (String) Current review status: pending, approved, or rejected.
+- `reviewed_at` (String) ISO 8601 timestamp when the request was reviewed.
 - `reviewer_id` (String) UUID of the reviewing user.
+- `reviewer_name` (String) Display name of the reviewing user.
 - `updated_at` (String) ISO 8601 timestamp when the request was last updated.

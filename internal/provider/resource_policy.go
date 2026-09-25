@@ -46,7 +46,16 @@ func (r *PolicyResource) Metadata(_ context.Context, req resource.MetadataReques
 
 func (r *PolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a mirror approval policy.",
+		// The description says "advisory" on purpose. The backend evaluates
+		// mirror policies only in its dry-run POST /admin/policies/evaluate
+		// handler; neither the mirror sync job nor pull-through consults them.
+		// The old "mirror approval policy" wording implied that a deny rule
+		// blocks mirroring. Revisit this text if the backend starts enforcing.
+		Description: "Manages a mirror policy: an `allow` or `deny` rule matched against the upstream registry, provider namespace and provider type. " +
+			"The registry records these policies but only evaluates them in its dry-run evaluation endpoint (`POST /api/v1/admin/policies/evaluate`). " +
+			"Mirror sync and pull-through do not enforce them: a `deny` policy does not stop matching providers from being mirrored or served, and `requires_approval` does not hold anything for review. " +
+			"To control what a mirror fetches, use the `namespace_filter`, `provider_filter`, `version_filter` and `platform_filter` attributes of `registry_mirror`. " +
+			"To review versions before Terraform clients can install them, use the registry's version approvals (the mirror configuration's own approval setting, which `registry_mirror` does not manage yet).",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "UUID of the policy.",
@@ -74,17 +83,17 @@ func (r *PolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Computed:    true,
 			},
 			"namespace_pattern": schema.StringAttribute{
-				Description: "Namespace pattern to match (supports wildcards).",
+				Description: "Glob pattern matched against the provider namespace alone (e.g., 'hashicorp' or 'hashi*').",
 				Optional:    true,
 				Computed:    true,
 			},
 			"provider_pattern": schema.StringAttribute{
-				Description: "Provider pattern to match (supports wildcards).",
+				Description: "Glob pattern matched against the provider type alone (e.g., 'aws' or '*').",
 				Optional:    true,
 				Computed:    true,
 			},
 			"priority": schema.Int64Attribute{
-				Description: "Policy evaluation priority (lower numbers evaluated first).",
+				Description: "Evaluation priority in the dry-run evaluation: higher numbers are evaluated first, ties go to the older policy, and the first matching active policy decides the result.",
 				Optional:    true,
 				Computed:    true,
 				Default:     int64default.StaticInt64(0),
@@ -96,7 +105,7 @@ func (r *PolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Default:     booldefault.StaticBool(true),
 			},
 			"requires_approval": schema.BoolAttribute{
-				Description: "Whether matching mirrors require manual approval.",
+				Description: "Whether the dry-run evaluation reports that matching providers require approval. Not enforced: mirror sync does not hold matching providers for review.",
 				Optional:    true,
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),

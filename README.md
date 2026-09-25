@@ -100,8 +100,8 @@ Full provider documentation is available on the
 | `registry_terraform_mirror` | Terraform/OpenTofu binary mirror configuration |
 | `registry_storage_config` | Storage backend configuration (local, S3, Azure Blob, GCS) |
 | `registry_storage_migration` | Migrate existing artifacts between storage backends |
-| `registry_policy` | Mirror approval policy |
-| `registry_approval_request` | Mirror approval request |
+| `registry_policy` | Mirror allow/deny policy (advisory: recorded, not enforced by mirror sync or pull-through) |
+| `registry_approval_request` | Mirror approval request (advisory: recorded, not enforced by mirror sync or pull-through) |
 
 ### Data Sources
 

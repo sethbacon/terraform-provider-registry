@@ -22,9 +22,13 @@ func (c *Client) GetApprovalRequest(ctx context.Context, id string) (*ApprovalRe
 	return &ar, nil
 }
 
-func (c *Client) DeleteApprovalRequest(ctx context.Context, id string) error {
-	return c.Delete(ctx, "/api/v1/admin/approvals/"+id)
-}
+// There is deliberately no DeleteApprovalRequest. The backend serves no
+// DELETE (or withdraw) route for approval requests: they are review records,
+// reachable only through list, get, create, PUT .../review and POST .../token.
+// A DELETE to /api/v1/admin/approvals/{id} matches no route and gets a 404,
+// which Client.Delete reports as success, so a method here would make destroy
+// look like it worked while the request stayed pending.
+// registry_approval_request's Delete removes the resource from state instead.
 
 func (c *Client) ListApprovalRequests(ctx context.Context) ([]ApprovalRequest, error) {
 	items, err := FetchAllPages(ctx, c, "/api/v1/admin/approvals", "approval_requests")
