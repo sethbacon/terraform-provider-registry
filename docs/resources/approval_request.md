@@ -3,16 +3,18 @@
 page_title: "registry_approval_request Resource - registry"
 subcategory: ""
 description: |-
-  Creates a mirror approval request. The review (approve/reject) is performed by an admin separately. Approval requests cannot be deleted: the registry keeps every request as a review record and has no API to delete or withdraw one. Destroying this resource, or replacing it because an argument changed, only removes it from Terraform state (with a warning); the request stays in the registry with its current review status, and a pending request can still be approved or rejected by an admin.
+  Creates a mirror approval request for a provider namespace (or a single provider) on a mirror. The review (approve/reject) is performed by an admin separately. The registry only records requests and their review status: mirror sync and pull-through do not check them, so a pending, approved or rejected request has no effect on what the mirror fetches or serves. To control what a mirror fetches, use the namespace_filter, provider_filter, version_filter and platform_filter attributes of registry_mirror. To review versions before Terraform clients can install them, use the registry's version approvals (the mirror configuration's own approval setting, which registry_mirror does not manage yet). Approval requests cannot be deleted: the registry keeps every request as a review record and has no API to delete or withdraw one. Destroying this resource, or replacing it because an argument changed, only removes it from Terraform state (with a warning); the request stays in the registry with its current review status, and a pending request can still be approved or rejected by an admin.
 ---
 
 # registry_approval_request (Resource)
 
-Creates a mirror approval request. The review (approve/reject) is performed by an admin separately. Approval requests cannot be deleted: the registry keeps every request as a review record and has no API to delete or withdraw one. Destroying this resource, or replacing it because an argument changed, only removes it from Terraform state (with a warning); the request stays in the registry with its current review status, and a pending request can still be approved or rejected by an admin.
+Creates a mirror approval request for a provider namespace (or a single provider) on a mirror. The review (approve/reject) is performed by an admin separately. The registry only records requests and their review status: mirror sync and pull-through do not check them, so a pending, approved or rejected request has no effect on what the mirror fetches or serves. To control what a mirror fetches, use the `namespace_filter`, `provider_filter`, `version_filter` and `platform_filter` attributes of `registry_mirror`. To review versions before Terraform clients can install them, use the registry's version approvals (the mirror configuration's own approval setting, which `registry_mirror` does not manage yet). Approval requests cannot be deleted: the registry keeps every request as a review record and has no API to delete or withdraw one. Destroying this resource, or replacing it because an argument changed, only removes it from Terraform state (with a warning); the request stays in the registry with its current review status, and a pending request can still be approved or rejected by an admin.
 
 ## Example Usage
 
 ```terraform
+# Advisory only: the registry records the request and its review status, but
+# mirror sync and pull-through do not check it.
 resource "registry_approval_request" "hashicorp_mirror" {
   mirror_id          = registry_mirror.hashicorp.id
   provider_namespace = "hashicorp"
@@ -35,7 +37,7 @@ resource "registry_approval_request" "hashicorp_mirror" {
 
 ### Read-Only
 
-- `auto_approved` (Boolean) True if the request was auto-approved by a matching policy.
+- `auto_approved` (Boolean) Whether the request was auto-approved. The registry does not currently auto-approve requests, so this is false.
 - `created_at` (String) ISO 8601 timestamp when the request was created.
 - `expires_at` (String) ISO 8601 timestamp when an approved request expires; null if it does not expire.
 - `id` (String) UUID of the approval request.

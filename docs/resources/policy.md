@@ -3,23 +3,26 @@
 page_title: "registry_policy Resource - registry"
 subcategory: ""
 description: |-
-  Manages a mirror approval policy.
+  Manages a mirror policy: an allow or deny rule matched against the upstream registry, provider namespace and provider type. The registry records these policies but only evaluates them in its dry-run evaluation endpoint (POST /api/v1/admin/policies/evaluate). Mirror sync and pull-through do not enforce them: a deny policy does not stop matching providers from being mirrored or served, and requires_approval does not hold anything for review. To control what a mirror fetches, use the namespace_filter, provider_filter, version_filter and platform_filter attributes of registry_mirror. To review versions before Terraform clients can install them, use the registry's version approvals (the mirror configuration's own approval setting, which registry_mirror does not manage yet).
 ---
 
 # registry_policy (Resource)
 
-Manages a mirror approval policy.
+Manages a mirror policy: an `allow` or `deny` rule matched against the upstream registry, provider namespace and provider type. The registry records these policies but only evaluates them in its dry-run evaluation endpoint (`POST /api/v1/admin/policies/evaluate`). Mirror sync and pull-through do not enforce them: a `deny` policy does not stop matching providers from being mirrored or served, and `requires_approval` does not hold anything for review. To control what a mirror fetches, use the `namespace_filter`, `provider_filter`, `version_filter` and `platform_filter` attributes of `registry_mirror`. To review versions before Terraform clients can install them, use the registry's version approvals (the mirror configuration's own approval setting, which `registry_mirror` does not manage yet).
 
 ## Example Usage
 
 ```terraform
-resource "registry_policy" "require_approval" {
-  name        = "require-approval"
-  description = "Requires approval before mirror sync"
-  rules       = jsonencode({
-    require_approval = true
-    approvers        = ["admin"]
-  })
+# Advisory only: the registry records this policy and reports it from its
+# dry-run evaluation, but mirror sync and pull-through do not enforce it.
+# Restrict what a mirror fetches with the registry_mirror filters instead.
+resource "registry_policy" "allow_hashicorp" {
+  name              = "allow-hashicorp"
+  description       = "Allow mirroring hashicorp providers"
+  policy_type       = "allow"
+  namespace_pattern = "hashicorp"
+  is_active         = true
+  requires_approval = false
 }
 ```
 
@@ -29,11 +32,17 @@ resource "registry_policy" "require_approval" {
 ### Required
 
 - `name` (String) Name of the policy.
-- `rules` (String) JSON-encoded policy rules.
+- `policy_type` (String) Policy type: 'allow' or 'deny'.
 
 ### Optional
 
 - `description` (String) Optional description.
+- `is_active` (Boolean) Whether the policy is active.
+- `namespace_pattern` (String) Glob pattern matched against the provider namespace alone (e.g., 'hashicorp' or 'hashi*').
+- `priority` (Number) Evaluation priority in the dry-run evaluation: higher numbers are evaluated first, ties go to the older policy, and the first matching active policy decides the result.
+- `provider_pattern` (String) Glob pattern matched against the provider type alone (e.g., 'aws' or '*').
+- `requires_approval` (Boolean) Whether the dry-run evaluation reports that matching providers require approval. Not enforced: mirror sync does not hold matching providers for review.
+- `upstream_registry` (String) Upstream registry URL to match.
 
 ### Read-Only
 
