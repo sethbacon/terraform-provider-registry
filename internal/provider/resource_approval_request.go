@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -50,7 +51,10 @@ func (r *ApprovalRequestResource) Metadata(_ context.Context, req resource.Metad
 
 func (r *ApprovalRequestResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Creates a mirror approval request. The review (approve/reject) is performed by an admin separately.",
+		Description: "Creates a mirror approval request. The review (approve/reject) is performed by an admin separately. " +
+			"Approval requests cannot be deleted: the registry keeps every request as a review record and has no API to delete or withdraw one. " +
+			"Destroying this resource, or replacing it because an argument changed, only removes it from Terraform state (with a warning); " +
+			"the request stays in the registry with its current review status, and a pending request can still be approved or rejected by an admin.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Description: "UUID of the approval request.",
@@ -212,6 +216,17 @@ func (r *ApprovalRequestResource) Update(_ context.Context, _ resource.UpdateReq
 	// Approval requests are immutable — any attribute change forces replace
 }
 
+// Delete forgets the approval request; it never calls the registry. Approval
+// requests are review records, and the backend serves list, get, create,
+// PUT .../review and POST .../token for them but no DELETE or withdraw. This
+// used to send DELETE /api/v1/admin/approvals/{id}, which matched no route;
+// Client.Delete treats a 404 on delete as success, so destroy reported success
+// while the request stayed pending in the registry. Mapping destroy onto
+// PUT .../review (a rejection) would be wrong too: that is an admin's review
+// decision, not the requester's cleanup.
+//
+// Returning without an error lets the framework drop the resource from state;
+// the warning makes it visible in the run that the request lives on.
 func (r *ApprovalRequestResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state ApprovalRequestResourceModel
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -219,9 +234,13 @@ func (r *ApprovalRequestResource) Delete(ctx context.Context, req resource.Delet
 		return
 	}
 
-	if err := r.client.DeleteApprovalRequest(ctx, state.ID.ValueString()); err != nil {
-		resp.Diagnostics.AddError("Error Deleting Approval Request", err.Error())
+	detail := fmt.Sprintf("Approval request %s was removed from Terraform state only. "+
+		"The registry has no API to delete or withdraw an approval request, so it remains in the registry", state.ID.ValueString())
+	if status := state.ReviewStatus.ValueString(); status != "" {
+		detail += fmt.Sprintf(" with its current review status (last read as %q)", status)
 	}
+	detail += ". A pending request can still be approved or rejected by an admin."
+	resp.Diagnostics.AddWarning("Approval Request Remains in the Registry", detail)
 }
 
 func (r *ApprovalRequestResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
