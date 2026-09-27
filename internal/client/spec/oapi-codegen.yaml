@@ -11,11 +11,12 @@
 # subsequent PR will switch one resource (e.g. User) over to use spec.User
 # and delete the corresponding hand-written struct.
 #
-# To regenerate:
+# To regenerate (offline, from the committed openapi3.json):
 #   make models-gen
 #
-# CI re-runs this on every PR and fails if `git diff` shows drift, so the
-# spec snapshot can never silently fall behind the backend.
+# CI re-runs this on every PR and fails if `git diff` shows drift, so
+# models_gen.go always matches the vendored spec, and BACKEND_VERSION names
+# the backend release that spec was copied from.
 
 package: spec
 generate:
