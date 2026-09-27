@@ -42,3 +42,14 @@ resource "registry_provider_record" "example" {
 - `created_by` (String) UUID of the user who created this provider record.
 - `id` (String) UUID of the provider record.
 - `updated_at` (String) ISO 8601 timestamp when the provider record was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A provider record is imported by its UUID.
+terraform import registry_provider_record.example 00000000-0000-0000-0000-000000000000
+```

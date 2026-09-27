@@ -51,3 +51,14 @@ resource "registry_approval_request" "hashicorp_mirror" {
 - `reviewer_id` (String) UUID of the reviewing user.
 - `reviewer_name` (String) Display name of the reviewing user.
 - `updated_at` (String) ISO 8601 timestamp when the request was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# An approval request is imported by its UUID.
+terraform import registry_approval_request.hashicorp_mirror 00000000-0000-0000-0000-000000000000
+```

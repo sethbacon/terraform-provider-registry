@@ -49,3 +49,15 @@ output "ci_api_key" {
 - `key` (String, Sensitive) The raw API key value. Only populated at creation time — store this securely.
 - `key_prefix` (String) First few characters of the key, for identification.
 - `last_used_at` (String) ISO 8601 timestamp of last key use.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# An API key is imported by its UUID. The raw key is shown only once, at creation,
+# so it is not recoverable on import and the key attribute stays null.
+terraform import registry_api_key.ci 00000000-0000-0000-0000-000000000000
+```

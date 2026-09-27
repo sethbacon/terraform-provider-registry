@@ -40,6 +40,8 @@ Read-Only:
 - `last_sync_status` (String) Last sync status.
 - `name` (String) Mirror name.
 - `organization_id` (String) Organization UUID.
+- `pull_through_cache_ttl_hours` (Number) Pull-through cache TTL in hours.
+- `pull_through_enabled` (Boolean) Whether pull-through caching is enabled.
 - `sync_interval_hours` (Number) Sync interval in hours.
 - `updated_at` (String) Last update timestamp.
 - `upstream_registry_url` (String) Upstream registry URL.
