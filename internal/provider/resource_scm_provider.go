@@ -56,7 +56,7 @@ func (r *SCMProviderResource) Schema(_ context.Context, _ resource.SchemaRequest
 				},
 			},
 			"organization_id": schema.StringAttribute{
-				Description: "UUID of the organization this SCM integration is scoped to. Omit for a global integration.",
+				Description: "UUID of the organization this SCM integration is scoped to. Set it explicitly: backend 4.18 and later refuse a platform-admin create that names no organization.",
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{

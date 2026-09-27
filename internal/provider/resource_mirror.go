@@ -74,7 +74,7 @@ func (r *MirrorResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Required:    true,
 			},
 			"organization_id": schema.StringAttribute{
-				Description: "UUID of the organization to publish mirrored providers under.",
+				Description: "UUID of the organization to publish mirrored providers under. Set it explicitly: backend 4.18 and later refuse a platform-admin create that names no organization.",
 				Optional:    true,
 				Computed:    true,
 			},
