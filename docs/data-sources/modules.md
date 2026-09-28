@@ -42,11 +42,15 @@ data "registry_modules" "search" {
 Read-Only:
 
 - `created_at` (String) Creation timestamp.
+- `deprecated` (Boolean) Whether the module is deprecated.
+- `deprecated_at` (String) Deprecation timestamp.
+- `deprecation_message` (String) Optional deprecation message.
 - `description` (String) Description.
 - `id` (String) UUID.
 - `name` (String) Module name.
 - `namespace` (String) Module namespace.
 - `organization_id` (String) Organization UUID.
 - `source` (String) Source repository URL.
+- `successor_module_id` (String) UUID of the successor module.
 - `system` (String) Provider system.
 - `updated_at` (String) Last update timestamp.

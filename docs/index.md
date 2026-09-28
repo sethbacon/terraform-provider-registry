@@ -11,11 +11,12 @@ The **registry** provider manages resources within a self-hosted [Terraform Regi
 
 ## Features
 
-- **Identity & Access**: Users, organizations, organization members, API keys, role templates
-- **Registry Content**: Module records, provider records, SCM integrations, module-SCM links
-- **Infrastructure**: Provider mirrors, Terraform binary mirrors, storage configurations
+- **Identity & Access**: Users, organizations, organization members, API keys, role templates, OIDC group mappings
+- **Registry Content**: Module records, provider records, SCM integrations, module-SCM links, module reanalysis
+- **Lifecycle**: Module, module version and provider version deprecations
+- **Infrastructure**: Provider mirrors, Terraform binary mirrors, storage configurations, storage migrations
 - **Governance**: Policies, approval requests
-- **Data Sources**: Read and list any of the above resources, plus audit logs and statistics
+- **Data Sources**: Read and list any of the above resources, plus audit logs, statistics, security scans and advisories, and the backend's OIDC, mTLS, identity-group, scanning and policy-engine configuration
 
 ## Example Usage
 
@@ -51,6 +52,7 @@ variable "registry_token" {
 - `max_retries` (Number) Maximum number of retries for failed requests (429, 5xx). Defaults to 3.
 - `timeout` (Number) HTTP request timeout in seconds. Defaults to 30.
 - `token` (String, Sensitive) API key or JWT bearer token for authentication. Can also be set with the TF_REGISTRY_TOKEN environment variable.
+- `version_check` (Boolean) Probe the backend GET /version on configure and warn if the backend is older than the minimum supported version. Defaults to true. Set to false to disable.
 
 ## Authentication
 
@@ -60,3 +62,10 @@ The provider supports two authentication methods, both passed as a Bearer token:
 2. **JWT** — Issued after OIDC login. Suitable for interactive use.
 
 Set the token via the `token` attribute or the `TF_REGISTRY_TOKEN` environment variable.
+
+## Organization Scoping
+
+Registry backends 4.18 and later refuse a platform-admin create of a provider
+mirror or an SCM provider that names no organization. Set `organization_id` on
+`registry_mirror` and `registry_scm_provider` explicitly rather than relying on
+the backend to pick one.

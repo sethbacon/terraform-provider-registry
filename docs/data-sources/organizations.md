@@ -39,5 +39,7 @@ Read-Only:
 - `created_at` (String) Creation timestamp.
 - `display_name` (String) Human-readable display name.
 - `id` (String) UUID of the organization.
+- `idp_name` (String) Bound IdP name within the chosen idp_type.
+- `idp_type` (String) Identity-provider type binding ('oidc', 'saml', 'ldap', or null).
 - `name` (String) URL-safe namespace name.
 - `updated_at` (String) Last update timestamp.

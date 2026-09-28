@@ -44,5 +44,4 @@ Read-Only:
 - `email` (String) User email.
 - `id` (String) UUID of the user.
 - `name` (String) User display name.
-- `oidc_sub` (String) OIDC subject identifier.
 - `updated_at` (String) Last update timestamp.

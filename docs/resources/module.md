@@ -30,7 +30,6 @@ resource "registry_module" "vpc" {
 
 - `name` (String) Module name.
 - `namespace` (String) Namespace (organization name) for the module.
-- `organization_id` (String) UUID of the organization that owns this module.
 - `system` (String) Provider system (e.g., 'aws', 'azurerm', 'google').
 
 ### Optional
@@ -42,5 +41,21 @@ resource "registry_module" "vpc" {
 
 - `created_at` (String) ISO 8601 timestamp when the module was created.
 - `created_by` (String) UUID of the user who created this module.
+- `deprecated` (Boolean) Whether the module is currently marked deprecated. Read-only here; manage with `registry_module_deprecation`.
+- `deprecated_at` (String) ISO 8601 timestamp when the module was deprecated, if applicable.
+- `deprecation_message` (String) Optional message explaining why the module was deprecated.
 - `id` (String) UUID of the module.
+- `organization_id` (String) UUID of the organization that owns this module. Set by the server.
+- `successor_module_id` (String) UUID of the successor module that replaces this one, if specified at deprecation time.
 - `updated_at` (String) ISO 8601 timestamp when the module was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A module record is imported by its UUID.
+terraform import registry_module.vpc 00000000-0000-0000-0000-000000000000
+```

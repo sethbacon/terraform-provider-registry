@@ -17,10 +17,10 @@ resource "registry_storage_config" "s3" {
   backend  = "s3"
   activate = true
   config = {
-    bucket     = "my-registry-bucket"
-    region     = "us-east-1"
-    access_key = var.aws_access_key
-    secret_key = var.aws_secret_key
+    s3_bucket            = "my-registry-bucket"
+    s3_region            = "us-east-1"
+    s3_access_key_id     = var.aws_access_key
+    s3_secret_access_key = var.aws_secret_key
   }
 }
 
@@ -41,7 +41,7 @@ variable "aws_secret_key" {
 ### Required
 
 - `backend` (String) Storage backend type: 'local', 's3', 'azure', or 'gcs'.
-- `config` (Map of String, Sensitive) Backend-specific configuration key-value pairs (e.g., bucket name, credentials). All values are stored encrypted.
+- `config` (Map of String, Sensitive) Backend-specific configuration key-value pairs (e.g., local_base_path, s3_bucket). All values are stored encrypted.
 
 ### Optional
 
@@ -53,3 +53,14 @@ variable "aws_secret_key" {
 - `created_at` (String) ISO 8601 timestamp when the config was created.
 - `id` (String) UUID of the storage configuration.
 - `updated_at` (String) ISO 8601 timestamp when the config was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A storage configuration is imported by its UUID. activate is imported as false.
+terraform import registry_storage_config.s3 00000000-0000-0000-0000-000000000000
+```

@@ -40,3 +40,14 @@ resource "registry_organization_member" "example" {
 - `role_template_name` (String) Name of the assigned role template.
 - `user_email` (String) Email of the member user.
 - `user_name` (String) Name of the member user.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# An organization member is imported as <organization_id>/<user_id>.
+terraform import registry_organization_member.example 00000000-0000-0000-0000-000000000000/11111111-1111-1111-1111-111111111111
+```

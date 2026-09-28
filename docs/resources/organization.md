@@ -27,8 +27,24 @@ resource "registry_organization" "example" {
 - `display_name` (String) Human-readable display name.
 - `name` (String) URL-safe namespace name (e.g., 'my-org'). Used in module/provider paths.
 
+### Optional
+
+- `idp_name` (String) Name of the bound IdP within the chosen `idp_type` (e.g., the SAML IdP name configured in the backend).
+- `idp_type` (String) Identity-provider type the organization is bound to: 'oidc', 'saml', 'ldap', or null. When set, only users authenticated via the matching IdP may join the organization.
+
 ### Read-Only
 
 - `created_at` (String) ISO 8601 timestamp when the organization was created.
 - `id` (String) UUID of the organization.
 - `updated_at` (String) ISO 8601 timestamp when the organization was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# An organization is imported by its UUID.
+terraform import registry_organization.example 00000000-0000-0000-0000-000000000000
+```

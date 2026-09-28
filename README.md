@@ -264,6 +264,10 @@ using [terraform-plugin-docs](https://github.com/hashicorp/terraform-plugin-docs
 make docs
 ```
 
+The `Generated Docs Drift` CI job reruns `make docs` with the tfplugindocs
+version pinned in `go.mod` and fails if `docs/` changes, so commit the
+regenerated pages with any schema, template or example change.
+
 ## Contributing
 
 This project uses a single-branch model: all `fix/*` and `feature/*` branches

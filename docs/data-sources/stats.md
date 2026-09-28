@@ -3,12 +3,12 @@
 page_title: "registry_stats Data Source - registry"
 subcategory: ""
 description: |-
-  Reads dashboard statistics from the registry.
+  Reads dashboard statistics from the registry. The shape mirrors the backend admin.DashboardStats response — the flat total_* counters from earlier provider versions are no longer present; use the nested modules, providers, provider_mirrors, and binary_mirrors blocks instead.
 ---
 
 # registry_stats (Data Source)
 
-Reads dashboard statistics from the registry.
+Reads dashboard statistics from the registry. The shape mirrors the backend admin.DashboardStats response — the flat `total_*` counters from earlier provider versions are no longer present; use the nested `modules`, `providers`, `provider_mirrors`, and `binary_mirrors` blocks instead.
 
 ## Example Usage
 
@@ -16,11 +16,23 @@ Reads dashboard statistics from the registry.
 data "registry_stats" "dashboard" {}
 
 output "total_modules" {
-  value = data.registry_stats.dashboard.total_modules
+  value = data.registry_stats.dashboard.modules.total
 }
 
 output "total_providers" {
-  value = data.registry_stats.dashboard.total_providers
+  value = data.registry_stats.dashboard.providers.total
+}
+
+output "total_users" {
+  value = data.registry_stats.dashboard.users
+}
+
+output "manual_provider_versions" {
+  value = data.registry_stats.dashboard.providers.manual_versions
+}
+
+output "binary_mirrors_healthy" {
+  value = data.registry_stats.dashboard.binary_mirrors.healthy
 }
 ```
 
@@ -29,9 +41,93 @@ output "total_providers" {
 
 ### Read-Only
 
-- `total_api_keys` (Number) Total number of API keys.
-- `total_mirrors` (Number) Total number of mirrors.
-- `total_modules` (Number) Total number of modules.
-- `total_organizations` (Number) Total number of organizations.
-- `total_providers` (Number) Total number of providers.
-- `total_users` (Number) Total number of users.
+- `binary_mirrors` (Attributes) Terraform/OpenTofu binary mirror configuration health. (see [below for nested schema](#nestedatt--binary_mirrors))
+- `downloads` (Number) Aggregate download count across all artifacts.
+- `modules` (Attributes) Module counters. (see [below for nested schema](#nestedatt--modules))
+- `organizations` (Number) Total number of organizations.
+- `provider_mirrors` (Attributes) Provider-mirror configuration health. (see [below for nested schema](#nestedatt--provider_mirrors))
+- `providers` (Attributes) Provider counters, split between manually published and mirror-synced records. (see [below for nested schema](#nestedatt--providers))
+- `recent_syncs` (Attributes List) Recent mirror sync runs (provider + binary), most recent first. (see [below for nested schema](#nestedatt--recent_syncs))
+- `scm_providers` (Number) Total number of SCM provider integrations.
+- `users` (Number) Total number of users.
+
+<a id="nestedatt--binary_mirrors"></a>
+### Nested Schema for `binary_mirrors`
+
+Read-Only:
+
+- `by_tool` (Attributes List) (see [below for nested schema](#nestedatt--binary_mirrors--by_tool))
+- `downloads` (Number)
+- `failed` (Number)
+- `healthy` (Number)
+- `platforms` (Number) Total synced platform binaries.
+- `syncing` (Number) Sync currently running.
+- `total` (Number)
+
+<a id="nestedatt--binary_mirrors--by_tool"></a>
+### Nested Schema for `binary_mirrors.by_tool`
+
+Read-Only:
+
+- `count` (Number)
+- `tool` (String)
+
+
+
+<a id="nestedatt--modules"></a>
+### Nested Schema for `modules`
+
+Read-Only:
+
+- `by_system` (Attributes List) Per-system breakdown. (see [below for nested schema](#nestedatt--modules--by_system))
+- `downloads` (Number) Aggregate module download count.
+- `total` (Number) Total module records.
+- `versions` (Number) Total module versions across all modules.
+
+<a id="nestedatt--modules--by_system"></a>
+### Nested Schema for `modules.by_system`
+
+Read-Only:
+
+- `count` (Number)
+- `system` (String)
+
+
+
+<a id="nestedatt--provider_mirrors"></a>
+### Nested Schema for `provider_mirrors`
+
+Read-Only:
+
+- `failed` (Number) Last sync failed.
+- `healthy` (Number) Last sync succeeded or never run but enabled.
+- `total` (Number)
+
+
+<a id="nestedatt--providers"></a>
+### Nested Schema for `providers`
+
+Read-Only:
+
+- `downloads` (Number)
+- `manual` (Number) Providers published directly to this registry.
+- `manual_versions` (Number)
+- `mirrored` (Number) Providers synced from upstream registries.
+- `mirrored_versions` (Number)
+- `total` (Number)
+- `total_versions` (Number)
+
+
+<a id="nestedatt--recent_syncs"></a>
+### Nested Schema for `recent_syncs`
+
+Read-Only:
+
+- `completed_at` (String)
+- `mirror_name` (String)
+- `mirror_type` (String) "binary" or "provider".
+- `platforms_synced` (Number)
+- `started_at` (String)
+- `status` (String)
+- `triggered_by` (String)
+- `versions_synced` (Number)

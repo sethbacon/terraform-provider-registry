@@ -3,12 +3,12 @@
 page_title: "registry_api_keys Data Source - registry"
 subcategory: ""
 description: |-
-  Lists API keys, optionally filtered by user.
+  Lists API keys, optionally filtered by organization.
 ---
 
 # registry_api_keys (Data Source)
 
-Lists API keys, optionally filtered by user.
+Lists API keys, optionally filtered by organization.
 
 ## Example Usage
 
@@ -25,7 +25,7 @@ data "registry_api_keys" "user_keys" {
 
 ### Optional
 
-- `user_id` (String) Filter by user UUID.
+- `organization_id` (String) Filter by organization UUID.
 
 ### Read-Only
 

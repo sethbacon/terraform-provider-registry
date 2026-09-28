@@ -40,3 +40,14 @@ resource "registry_role_template" "module_publisher" {
 - `id` (String) UUID of the role template.
 - `is_system` (Boolean) Whether this is a built-in system role (cannot be deleted).
 - `updated_at` (String) ISO 8601 timestamp when the role template was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A role template is imported by its UUID.
+terraform import registry_role_template.module_publisher 00000000-0000-0000-0000-000000000000
+```

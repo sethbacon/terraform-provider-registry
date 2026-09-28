@@ -50,3 +50,14 @@ resource "registry_terraform_mirror" "opentofu" {
 - `last_sync_at` (String) ISO 8601 timestamp of last sync.
 - `last_sync_status` (String) Status of last sync.
 - `updated_at` (String) ISO 8601 timestamp when the mirror was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A Terraform binary mirror is imported by its UUID.
+terraform import registry_terraform_mirror.opentofu 00000000-0000-0000-0000-000000000000
+```

@@ -33,9 +33,12 @@ output "scm_names" {
 Read-Only:
 
 - `base_url` (String) Base URL for self-hosted instances.
+- `client_id` (String) OAuth client ID.
 - `created_at` (String) Creation timestamp.
 - `id` (String) UUID.
+- `is_active` (Boolean) Whether the integration is enabled.
 - `name` (String) Display name.
-- `oauth_status` (String) OAuth token status.
+- `organization_id` (String) Organization the integration is scoped to (null for global).
+- `tenant_id` (String) Azure DevOps tenant ID.
 - `type` (String) SCM type.
 - `updated_at` (String) Last update timestamp.
