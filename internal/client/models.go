@@ -152,6 +152,15 @@ type OIDCGroupMappingInput struct {
 	DefaultRole    string             `json:"default_role"`
 }
 
+// User represents a registry user account.
+type User struct {
+	ID        *string `json:"id,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	Name      *string `json:"name,omitempty"`
+	CreatedAt *string `json:"created_at,omitempty"`
+	UpdatedAt *string `json:"updated_at,omitempty"`
+}
+
 // CreateUserRequest is the payload for creating a user.
 type CreateUserRequest struct {
 	Email   string  `json:"email"`

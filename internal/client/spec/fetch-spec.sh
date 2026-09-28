@@ -2,10 +2,9 @@
 # fetch-spec.sh — vendor a backend release's OpenAPI 3 spec into this package.
 #
 # MAINTAINER-ONLY. CI never runs this script. The committed openapi3.json is
-# the source of truth: the Generated Models Drift job regenerates the Go types
-# from it offline (`make models-gen`), and the route-contract test in
-# internal/client checks every client call against it. Run this only to move
-# the vendored spec to another backend release.
+# the source of truth for the route-contract test in internal/client, which
+# checks every client call against it. Run this only to move the vendored
+# spec to another backend release.
 #
 # Usage:
 #   internal/client/spec/fetch-spec.sh <backend-checkout> <release-tag>
@@ -32,10 +31,9 @@
 # why the spec is read from git: the public CI of this repository never needs
 # the backend at all.
 #
-# Afterwards run `make models-gen` and `go test ./internal/client/...`, review
-# the spec diff (everything in openapi3.json is published with this
-# repository), and commit openapi3.json, BACKEND_VERSION, openapi3.json.sha256,
-# openapi3-patched.json and models_gen.go together.
+# Afterwards run `go test ./internal/client/...`, review the spec diff
+# (everything in openapi3.json is published with this repository), and
+# commit openapi3.json, BACKEND_VERSION and openapi3.json.sha256 together.
 
 set -euo pipefail
 
@@ -88,4 +86,4 @@ printf '%s\n' "${TAG}" >"${SCRIPT_DIR}/BACKEND_VERSION"
 
 echo "    backend: ${TAG} ($(git -C "${BACKEND_DIR}" rev-parse --short "refs/tags/${TAG}^{commit}"))"
 echo "    wrote:   openapi3.json ($(wc -c <"${SCRIPT_DIR}/openapi3.json") bytes), BACKEND_VERSION, openapi3.json.sha256"
-echo "    next:    make models-gen && go test ./internal/client/..."
+echo "    next:    go test ./internal/client/..."

@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/terraform-registry/terraform-provider-registry/internal/client"
-	"github.com/terraform-registry/terraform-provider-registry/internal/client/spec"
 )
 
 var _ resource.Resource = &UserResource{}
@@ -161,7 +160,7 @@ func (r *UserResource) ImportState(ctx context.Context, req resource.ImportState
 	resp.Diagnostics.Append(resp.State.Set(ctx, userToModel(user))...)
 }
 
-func userToModel(u *spec.User) UserResourceModel {
+func userToModel(u *client.User) UserResourceModel {
 	deref := func(s *string) types.String {
 		if s == nil {
 			return types.StringValue("")
@@ -169,7 +168,7 @@ func userToModel(u *spec.User) UserResourceModel {
 		return types.StringValue(*s)
 	}
 	return UserResourceModel{
-		ID:        deref(u.Id),
+		ID:        deref(u.ID),
 		Email:     deref(u.Email),
 		Name:      deref(u.Name),
 		CreatedAt: deref(u.CreatedAt),

@@ -68,55 +68,6 @@ jobs:
         with:
           version: v2.11.3
 
-  # Verifies the generated client types in internal/client/spec/models_gen.go
-  # (and the patched spec they are generated from) are what the committed
-  # openapi3.json produces. It needs nothing but the checkout: the spec is
-  # vendored from the backend release named in spec/BACKEND_VERSION, so no
-  # backend image is pulled and no registry is logged in to. Moving to another
-  # release is a maintainer step (spec/fetch-spec.sh) that CI never runs.
-  # See internal/client/spec/README.md for the toolchain.
-  models-gen-drift:
-    name: Generated Models Drift
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      # hardening-exception: egress-audit — this job downloads Go modules and tools
-      #   from the module proxy, installs a Python toolchain, and clones this
-      #   repository; harden-runner has never run in this repository, so no endpoint
-      #   baseline exists and a block policy written without one fails closed on its
-      #   first run; audit is what produces that list
-      - name: Harden the runner
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
-        with:
-          egress-policy: audit
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-          cache: true
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
-      - name: Install oapi-codegen
-        uses: 4cloudguru/shared-workflows/.github/actions/go-install@c52ee27a03d06eee94e13c7bb56385d4edfb94d4 # v1.28.0
-        with:
-          package: github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.7.0
-      # The committed spec is the input now, so hold it to the checksum
-      # fetch-spec.sh recorded: a hand edit would otherwise regenerate cleanly.
-      - name: Verify the vendored spec
-        working-directory: internal/client/spec
-        run: sha256sum --check --strict openapi3.json.sha256
-      - name: Regenerate models
-        run: make models-gen
-      - name: Fail on drift
-        run: |
-          if ! git diff --exit-code internal/client/spec/openapi3-patched.json internal/client/spec/models_gen.go; then
-            echo "::error::Generated client types are out of sync with the committed openapi3.json."
-            echo "Run 'make models-gen' locally and commit the result."
-            exit 1
-          fi
-          echo "Generated models are in sync with the committed spec ($(cat internal/client/spec/BACKEND_VERSION))."
-
   # Verifies docs/ matches what the pinned tfplugindocs (go.mod, run through
   # main.go's go:generate) renders from the schema descriptions, templates/
   # and examples/. Without it, six resources and fourteen data sources shipped

@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/terraform-registry/terraform-provider-registry/internal/client"
-	"github.com/terraform-registry/terraform-provider-registry/internal/client/spec"
 )
 
 var _ datasource.DataSource = &UsersDataSource{}
@@ -90,13 +89,13 @@ func (d *UsersDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	config.Users = make([]UserModel, len(users))
 	for i, u := range users {
-		config.Users[i] = specUserToModel(&u)
+		config.Users[i] = toUserModel(&u)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, config)...)
 }
 
-func specUserToModel(u *spec.User) UserModel {
+func toUserModel(u *client.User) UserModel {
 	deref := func(s *string) types.String {
 		if s == nil {
 			return types.StringValue("")
@@ -104,7 +103,7 @@ func specUserToModel(u *spec.User) UserModel {
 		return types.StringValue(*s)
 	}
 	return UserModel{
-		ID:        deref(u.Id),
+		ID:        deref(u.ID),
 		Email:     deref(u.Email),
 		Name:      deref(u.Name),
 		CreatedAt: deref(u.CreatedAt),
