@@ -25,3 +25,8 @@ vendor/
 .vscode/
 *.swp
 *.swo
+
+# Acceptance test stack: the backend container writes its one-time setup
+# token here (deployments/docker-compose.test.yml), bind-mounted to the
+# host so the test binary can read it. Never committed.
+/deployments/.acc-run/

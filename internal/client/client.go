@@ -111,12 +111,14 @@ func (c *Client) Do(ctx context.Context, method, path string, body interface{}) 
 
 	for {
 		var bodyReader io.Reader
+		var orgID string
 		if body != nil {
 			b, err := json.Marshal(body)
 			if err != nil {
 				return nil, fmt.Errorf("marshaling request body: %w", err)
 			}
 			bodyReader = bytes.NewReader(b)
+			orgID = organizationIDFromBody(b)
 		}
 
 		req, err := http.NewRequestWithContext(ctx, method, reqURL, bodyReader)
@@ -126,6 +128,16 @@ func (c *Client) Do(ctx context.Context, method, path string, body interface{}) 
 		req.Header.Set("Authorization", "Bearer "+c.token)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Accept", "application/json")
+		if orgID != "" {
+			// The backend resolves the acting organization from an explicit
+			// body field first and this header second (an admin's in-scope
+			// organization is the last resort, and a platform admin has none
+			// by default). Sending it whenever the body already names one
+			// keeps both signals in agreement instead of leaving the header
+			// unset and relying solely on body-field support existing on
+			// every route.
+			req.Header.Set("X-Organization-Id", orgID)
+		}
 
 		tflog.Debug(ctx, "registry API request", map[string]interface{}{
 			"method": method,
@@ -173,6 +185,22 @@ func (c *Client) Do(ctx context.Context, method, path string, body interface{}) 
 
 		return resp, nil
 	}
+}
+
+// organizationIDFromBody returns the "organization_id" string field from an
+// already-marshaled JSON request body, or "" when the field is absent, null,
+// or empty. Request bodies use several distinct Go structs (some with a
+// plain string field, some with *string for tri-state omit/null/value), so
+// this re-decodes the marshaled bytes rather than requiring every caller's
+// struct to satisfy some shared interface.
+func organizationIDFromBody(b []byte) string {
+	var payload struct {
+		OrganizationID *string `json:"organization_id"`
+	}
+	if err := json.Unmarshal(b, &payload); err != nil || payload.OrganizationID == nil {
+		return ""
+	}
+	return *payload.OrganizationID
 }
 
 // Get performs a GET request and decodes the JSON response body into result.
