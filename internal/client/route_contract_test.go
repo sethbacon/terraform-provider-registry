@@ -805,7 +805,7 @@ func TestCheckRoutes_ReportsGapsAndStaleAllowlistEntries(t *testing.T) {
 	calls := []clientCall{
 		{method: "GET", path: "/api/v1/things", pos: "a.go:1 (Served)"},
 		{method: "DELETE", path: "/api/v1/things/{}", pos: "a.go:2 (Served)"},
-		{method: "GET", path: "/api/v1/thigns", pos: "a.go:3 (Typo)"},
+		{method: "GET", path: "/api/v1/thingz", pos: "a.go:3 (Typo)"},
 		{method: "PUT", path: "/api/v1/things", pos: "a.go:4 (WrongMethod)"},
 		{method: "POST", path: "/api/v1/undocumented", pos: "a.go:5 (Allowlisted)"},
 	}
@@ -818,7 +818,7 @@ func TestCheckRoutes_ReportsGapsAndStaleAllowlistEntries(t *testing.T) {
 	problems, allowed := checkRoutes(calls, spec, gaps, "v0.0.0-test")
 
 	wantProblems := []string{
-		`a.go:3 (Typo): GET /api/v1/thigns is not an operation in the vendored spec of backend v0.0.0-test`,
+		`a.go:3 (Typo): GET /api/v1/thingz is not an operation in the vendored spec of backend v0.0.0-test`,
 		`a.go:4 (WrongMethod): PUT /api/v1/things is not an operation in the vendored spec of backend v0.0.0-test`,
 		`knownRouteGaps["DELETE /api/v1/uncalled"] is stale: no client call uses this route any more, so delete the entry`,
 		`knownRouteGaps["GET /api/v1/documented"] is stale: the vendored spec has this route now, so delete the entry`,
