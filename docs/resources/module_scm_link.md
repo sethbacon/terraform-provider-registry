@@ -14,12 +14,12 @@ Links a module to an SCM repository for automatic version publishing via webhook
 
 ```terraform
 resource "registry_module_scm_link" "vpc" {
-  module_id      = registry_module.vpc.id
+  module_id       = registry_module.vpc.id
   scm_provider_id = registry_scm_provider.github.id
-  owner          = "my-org"
-  repo           = "terraform-aws-vpc"
-  branch         = "main"
-  tag_pattern    = "v*"
+  owner           = "my-org"
+  repo            = "terraform-aws-vpc"
+  branch          = "main"
+  tag_pattern     = "v*"
 }
 ```
 
@@ -36,9 +36,22 @@ resource "registry_module_scm_link" "vpc" {
 
 ### Optional
 
+- `auto_publish_enabled` (Boolean) Whether to automatically publish a new module version when a matching tag is pushed. Defaults to false.
+- `repository_path` (String) Path within the repository where the module sources live. Defaults to '/' (repo root). Use this for monorepo layouts.
 - `tag_pattern` (String) Optional glob pattern for version tags (e.g., 'v*').
 
 ### Read-Only
 
 - `created_at` (String) ISO 8601 timestamp when the link was created.
 - `updated_at` (String) ISO 8601 timestamp when the link was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A module SCM link is imported by the UUID of the linked module.
+terraform import registry_module_scm_link.vpc 00000000-0000-0000-0000-000000000000
+```

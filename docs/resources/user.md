@@ -33,12 +33,19 @@ resource "registry_user" "oidc" {
 - `email` (String) Email address of the user.
 - `name` (String) Display name of the user.
 
-### Optional
-
-- `oidc_sub` (String) OIDC subject identifier. Set to link this user to an external identity provider subject.
-
 ### Read-Only
 
 - `created_at` (String) ISO 8601 timestamp when the user was created.
 - `id` (String) UUID of the user.
 - `updated_at` (String) ISO 8601 timestamp when the user was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A user is imported by its UUID.
+terraform import registry_user.example 00000000-0000-0000-0000-000000000000
+```

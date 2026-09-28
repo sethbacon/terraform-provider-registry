@@ -13,15 +13,23 @@ Manages a source control integration. OAuth token setup is performed separately 
 ## Example Usage
 
 ```terraform
+# Set organization_id: backend 4.18 and later refuse a platform-admin create
+# of an SCM provider that names no organization.
 resource "registry_scm_provider" "github" {
-  name = "GitHub"
-  type = "github"
+  organization_id = registry_organization.example.id
+  name            = "GitHub"
+  type            = "github"
+  client_id       = var.github_oauth_client_id
+  client_secret   = var.github_oauth_client_secret
 }
 
 resource "registry_scm_provider" "self_hosted_gitlab" {
-  name     = "Internal GitLab"
-  type     = "gitlab"
-  base_url = "https://gitlab.mycompany.com"
+  organization_id = registry_organization.example.id
+  name            = "Internal GitLab"
+  type            = "gitlab"
+  base_url        = "https://gitlab.mycompany.com"
+  client_id       = var.gitlab_oauth_client_id
+  client_secret   = var.gitlab_oauth_client_secret
 }
 ```
 
@@ -35,11 +43,28 @@ resource "registry_scm_provider" "self_hosted_gitlab" {
 
 ### Optional
 
-- `base_url` (String) Base URL for self-hosted SCM instances (e.g., 'https://github.mycompany.com').
+- `base_url` (String) Base URL for self-hosted SCM instances (e.g., 'https://github.mycompany.com'). Required for Bitbucket Data Center.
+- `client_id` (String) OAuth application client ID. Required for OAuth-based providers (github, gitlab, azure, bitbucket cloud). Not returned after creation.
+- `client_secret` (String, Sensitive) OAuth application client secret. Required for OAuth-based providers. Not returned after creation.
+- `is_active` (Boolean) Whether the SCM integration is enabled. Defaults to true.
+- `organization_id` (String) UUID of the organization this SCM integration is scoped to. Set it explicitly: backend 4.18 and later refuse a platform-admin create that names no organization.
+- `tenant_id` (String) Tenant ID for Azure DevOps integrations.
+- `webhook_secret` (String, Sensitive) Shared secret used to validate incoming webhook payloads. Not returned after creation.
 
 ### Read-Only
 
 - `created_at` (String) ISO 8601 timestamp when the SCM provider was created.
 - `id` (String) UUID of the SCM provider.
-- `oauth_status` (String) Current OAuth token status.
 - `updated_at` (String) ISO 8601 timestamp when the SCM provider was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# An SCM provider is imported by its UUID. The API never returns client_secret or
+# webhook_secret, so set them in configuration after import.
+terraform import registry_scm_provider.github 00000000-0000-0000-0000-000000000000
+```

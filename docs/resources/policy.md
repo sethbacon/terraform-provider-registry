@@ -49,3 +49,14 @@ resource "registry_policy" "allow_hashicorp" {
 - `created_at` (String) ISO 8601 timestamp when the policy was created.
 - `id` (String) UUID of the policy.
 - `updated_at` (String) ISO 8601 timestamp when the policy was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A policy is imported by its UUID.
+terraform import registry_policy.allow_hashicorp 00000000-0000-0000-0000-000000000000
+```

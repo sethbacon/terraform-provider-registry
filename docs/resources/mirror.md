@@ -39,9 +39,11 @@ resource "registry_mirror" "hashicorp" {
 - `description` (String) Optional description.
 - `enabled` (Boolean) Whether periodic syncing is enabled.
 - `namespace_filter` (List of String) Namespace allowlist. Empty list means all namespaces.
-- `organization_id` (String) UUID of the organization to publish mirrored providers under.
+- `organization_id` (String) UUID of the organization to publish mirrored providers under. Set it explicitly: backend 4.18 and later refuse a platform-admin create that names no organization.
 - `platform_filter` (List of String) Platform allowlist in 'os/arch' format (e.g., ['linux/amd64']).
 - `provider_filter` (List of String) Provider type allowlist. Empty list means all providers.
+- `pull_through_cache_ttl_hours` (Number) How long to cache pull-through entries before re-checking upstream. Defaults to 24 hours.
+- `pull_through_enabled` (Boolean) Whether to fetch missing providers on demand from the upstream registry, in addition to the periodic sync. Defaults to false.
 - `sync_interval_hours` (Number) How often to sync in hours.
 - `version_filter` (String) Version expression (e.g., '>=3.0.0', 'latest:5').
 
@@ -52,3 +54,14 @@ resource "registry_mirror" "hashicorp" {
 - `last_sync_at` (String) ISO 8601 timestamp of last sync.
 - `last_sync_status` (String) Status of last sync: success, failed, or in_progress.
 - `updated_at` (String) ISO 8601 timestamp when the mirror was last updated.
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# A provider mirror is imported by its UUID.
+terraform import registry_mirror.hashicorp 00000000-0000-0000-0000-000000000000
+```

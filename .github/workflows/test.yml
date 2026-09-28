@@ -117,6 +117,52 @@ jobs:
           fi
           echo "Generated models are in sync with the committed spec ($(cat internal/client/spec/BACKEND_VERSION))."
 
+  # Verifies docs/ matches what the pinned tfplugindocs (go.mod, run through
+  # main.go's go:generate) renders from the schema descriptions, templates/
+  # and examples/. Without it, six resources and fourteen data sources shipped
+  # with no page on the public registry and fifteen pages drifted from their
+  # schemas. `git status --porcelain` is used rather than `git diff` so a page
+  # for a newly registered resource or data source (an untracked file) fails
+  # the gate too.
+  docs-drift:
+    name: Generated Docs Drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # hardening-exception: egress-audit — this job downloads Go modules and tools
+      #   from the module proxy and clones this repository; harden-runner has never
+      #   run in this repository, so no endpoint baseline exists and a block policy
+      #   written without one fails closed on its first run; audit is what produces
+      #   that list
+      - name: Harden the runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      # tfplugindocs needs a terraform binary to read the provider schema.
+      # Pre-installing it keeps tfplugindocs from downloading and GPG-verifying
+      # one through hc-install, the same transient failure the acceptance
+      # shards avoid.
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_wrapper: false
+      - name: Regenerate docs
+        run: make docs
+      - name: Fail on drift
+        run: |
+          if [ -n "$(git status --porcelain -- docs/)" ]; then
+            git status --porcelain -- docs/
+            git diff -- docs/
+            echo "::error::docs/ is out of sync with the provider schema, templates/ or examples/."
+            echo "Run 'make docs' locally and commit the result."
+            exit 1
+          fi
+          echo "Generated docs are in sync."
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

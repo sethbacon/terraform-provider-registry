@@ -64,7 +64,16 @@ golangci-lint run
 
 # Unit tests (no backend required)
 go test -v -count=1 ./internal/client/...
+
+# Regenerate docs/ (needs terraform on PATH); CI fails if docs/ changes
+make docs
+git status --porcelain -- docs/
 ```
+
+Any change to a schema description, `templates/` or `examples/` must be committed
+together with the regenerated `docs/`. A new resource or data source needs an
+example under `examples/resources/<name>/resource.tf` (plus `import.sh` if it
+supports import) or `examples/data-sources/<name>/data-source.tf`.
 
 For changes that affect provider behaviour, run the acceptance tests too:
 
