@@ -1,88 +1,91 @@
 #!/usr/bin/env bash
-# fetch-spec.sh — Pull openapi3.json from a pinned backend image.
+# fetch-spec.sh — vendor a backend release's OpenAPI 3 spec into this package.
 #
-# Strategy:
-#   1. Start postgres + backend on a private docker network.
-#   2. Wait for the backend's /openapi3.json endpoint (served from embedded
-#      bytes once the HTTP server starts after a successful DB ping).
-#   3. curl the spec, write it next to this script.
-#   4. Tear down both containers and the network.
+# MAINTAINER-ONLY. CI never runs this script. The committed openapi3.json is
+# the source of truth: the Generated Models Drift job regenerates the Go types
+# from it offline (`make models-gen`), and the route-contract test in
+# internal/client checks every client call against it. Run this only to move
+# the vendored spec to another backend release.
 #
-# To bump the backend pin, edit BACKEND_TAG below. CI re-fetches the spec
-# on every PR and fails on `git diff`, so the pin and the committed
-# openapi3.json stay in lockstep.
+# Usage:
+#   internal/client/spec/fetch-spec.sh <backend-checkout> <release-tag>
+#
+#   <backend-checkout>  a local clone of terraform-registry-backend. Only its
+#                       git objects are read, so its current branch and working
+#                       tree do not matter; run `git fetch --tags` there first.
+#   <release-tag>       the backend release to vendor, e.g. v1.1.6.
+#
+# It writes, next to this script:
+#   openapi3.json         backend/docs/openapi3.json exactly as committed at the
+#                         tag.
+#   BACKEND_VERSION       the tag, so the spec can always be traced back to the
+#                         release it came from (the spec's own info.version is
+#                         a fixed placeholder and says nothing).
+#   openapi3.json.sha256  the file's SHA-256. The route-contract test refuses a
+#                         spec that no longer matches it, so openapi3.json
+#                         cannot be hand-edited into agreement with the client
+#                         and still claim to be that release's spec.
+#
+# The backend embeds that same file in its binary and serves it at
+# /openapi3.json, so this is the document a running server of the release
+# returns, obtained without docker, a database or registry credentials. That is
+# why the spec is read from git: the public CI of this repository never needs
+# the backend at all.
+#
+# Afterwards run `make models-gen` and `go test ./internal/client/...`, review
+# the spec diff (everything in openapi3.json is published with this
+# repository), and commit openapi3.json, BACKEND_VERSION, openapi3.json.sha256,
+# openapi3-patched.json and models_gen.go together.
 
 set -euo pipefail
 
+if [ "$#" -ne 2 ]; then
+  echo "usage: $0 <backend-checkout> <release-tag>" >&2
+  exit 2
+fi
+
+BACKEND_DIR="$1"
+TAG="$2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BACKEND_TAG="${BACKEND_TAG:-1.1.6}"
-IMAGE="ghcr.io/sethbacon/terraform-registry-backend:${BACKEND_TAG}"
-SUFFIX="${RANDOM}-$$"
-NETWORK="tpr-spec-fetch-${SUFFIX}"
-PG_CONTAINER="tpr-spec-fetch-pg-${SUFFIX}"
-BE_CONTAINER="tpr-spec-fetch-be-${SUFFIX}"
-PORT=8088
-OUT="${SCRIPT_DIR}/openapi3.json"
+SPEC_PATH="backend/docs/openapi3.json"
 
-cleanup() {
-  docker rm -f "${BE_CONTAINER}" >/dev/null 2>&1 || true
-  docker rm -f "${PG_CONTAINER}" >/dev/null 2>&1 || true
-  docker network rm "${NETWORK}" >/dev/null 2>&1 || true
-}
-trap cleanup EXIT
+if ! git -C "${BACKEND_DIR}" rev-parse --git-dir >/dev/null 2>&1; then
+  echo "ERROR: ${BACKEND_DIR} is not a git checkout" >&2
+  exit 1
+fi
 
-echo "    image:  ${IMAGE}"
-echo "    output: ${OUT}"
+# A tag, not a branch or a bare commit: BACKEND_VERSION must name something
+# that resolves to the same bytes for whoever checks it later.
+if ! git -C "${BACKEND_DIR}" rev-parse -q --verify "refs/tags/${TAG}^{commit}" >/dev/null; then
+  echo "ERROR: ${TAG} is not a tag in ${BACKEND_DIR} (run git fetch --tags there?)" >&2
+  exit 1
+fi
 
-docker network create "${NETWORK}" >/dev/null
+if ! git -C "${BACKEND_DIR}" cat-file -e "refs/tags/${TAG}:${SPEC_PATH}" 2>/dev/null; then
+  echo "ERROR: ${TAG} has no ${SPEC_PATH} (the backend commits it from v1.1.5 on)" >&2
+  exit 1
+fi
 
-# Postgres for the backend to ping at startup.
-docker run -d \
-  --name "${PG_CONTAINER}" \
-  --network "${NETWORK}" \
-  -e POSTGRES_DB=terraform_registry \
-  -e POSTGRES_USER=registry \
-  -e POSTGRES_PASSWORD=registry \
-  postgres:16-alpine >/dev/null
+tmp="$(mktemp "${SCRIPT_DIR}/.openapi3.json.XXXXXX")"
+trap 'rm -f "${tmp}"' EXIT
 
-# Wait for postgres to accept connections.
-for i in $(seq 1 30); do
-  if docker exec "${PG_CONTAINER}" pg_isready -U registry -d terraform_registry >/dev/null 2>&1; then
-    break
-  fi
-  sleep 1
-done
+# Carriage returns are stripped so the checksum covers the LF-only bytes git
+# stores for *.json in this repository (.gitattributes). JSON never needs a raw
+# CR, so this cannot change the document.
+git -C "${BACKEND_DIR}" show "refs/tags/${TAG}:${SPEC_PATH}" | tr -d '\r' >"${tmp}"
+mv "${tmp}" "${SCRIPT_DIR}/openapi3.json"
 
-# Start the backend. ENCRYPTION_KEY + TFR_JWT_SECRET are required at boot
-# but never used — we hit /openapi3.json which is served from embedded bytes.
-docker run -d \
-  --name "${BE_CONTAINER}" \
-  --network "${NETWORK}" \
-  -p "${PORT}:8080" \
-  -e TFR_DATABASE_HOST="${PG_CONTAINER}" \
-  -e TFR_DATABASE_PORT=5432 \
-  -e TFR_DATABASE_NAME=terraform_registry \
-  -e TFR_DATABASE_USER=registry \
-  -e TFR_DATABASE_PASSWORD=registry \
-  -e TFR_DATABASE_SSL_MODE=disable \
-  -e TFR_SERVER_HOST=0.0.0.0 \
-  -e TFR_SERVER_PORT=8080 \
-  -e TFR_JWT_SECRET=fetch-spec-only-not-for-production-not-for-production \
-  -e ENCRYPTION_KEY=00000000000000000000000000000000 \
-  "${IMAGE}" >/dev/null
+# Hash from stdin and write the sha256sum line ourselves: sha256sum and
+# `shasum -a 256` mark files differently across platforms (" *name" on
+# Windows), and the committed file must not churn with the maintainer's OS.
+if command -v sha256sum >/dev/null 2>&1; then
+  sum="$(sha256sum <"${SCRIPT_DIR}/openapi3.json" | cut -d' ' -f1)"
+else
+  sum="$(shasum -a 256 <"${SCRIPT_DIR}/openapi3.json" | cut -d' ' -f1)"
+fi
+printf '%s  openapi3.json\n' "${sum}" >"${SCRIPT_DIR}/openapi3.json.sha256"
+printf '%s\n' "${TAG}" >"${SCRIPT_DIR}/BACKEND_VERSION"
 
-for i in $(seq 1 60); do
-  if curl -sf "http://localhost:${PORT}/openapi3.json" -o "${OUT}.tmp" 2>/dev/null; then
-    mv "${OUT}.tmp" "${OUT}"
-    echo "    fetched: $(wc -c <"${OUT}") bytes"
-    exit 0
-  fi
-  sleep 1
-done
-
-echo "ERROR: backend container never served /openapi3.json"
-echo "--- postgres logs ---"
-docker logs "${PG_CONTAINER}" 2>&1 | tail -20 || true
-echo "--- backend logs ---"
-docker logs "${BE_CONTAINER}" 2>&1 | tail -30 || true
-exit 1
+echo "    backend: ${TAG} ($(git -C "${BACKEND_DIR}" rev-parse --short "refs/tags/${TAG}^{commit}"))"
+echo "    wrote:   openapi3.json ($(wc -c <"${SCRIPT_DIR}/openapi3.json") bytes), BACKEND_VERSION, openapi3.json.sha256"
+echo "    next:    make models-gen && go test ./internal/client/..."
