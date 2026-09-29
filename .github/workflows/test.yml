@@ -14,7 +14,6 @@ concurrency:
 
 permissions:
   contents: read
-  packages: read
 
 jobs:
   build:
@@ -192,6 +191,16 @@ jobs:
       # backend, semver) ran nowhere until they were listed here.
       - run: go test -v -count=1 -timeout 10m ./internal/client/... ./internal/cigate/... ./internal/provider/...
 
+  # Acceptance tests need a running backend, and this repository no longer
+  # carries a pinned public image to pull one from (see docker-compose.test.yml
+  # and README.md "Running tests"). This job only runs when the repository (or
+  # an environment protecting it) has a TFR_ACC_BACKEND_IMAGE secret naming an
+  # image it can reach; on a fork, or any checkout without that secret
+  # configured, it is skipped rather than failed. Acceptance tests otherwise
+  # run wherever a backend is reachable and that secret is set — see
+  # README.md for the full environment-variable contract, which applies the
+  # same way in any CI environment.
+  #
   # Acceptance tests are sharded across 4 parallel jobs to cut wall-clock time.
   # Each shard runs its own isolated Docker stack on a fresh runner — no shared
   # state between shards. Partition is by test-name regex, balanced by observed
@@ -200,6 +209,7 @@ jobs:
     name: Acceptance Tests / ${{ matrix.shard.id }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    if: ${{ secrets.TFR_ACC_BACKEND_IMAGE != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -209,7 +219,7 @@ jobs:
             run: "^(TestAccModuleSCMLink_basic|TestAccOrganizationMember_basic|TestAccPolicy_basic)$"
           # Mid-heavy resource tests. ~600s.
           - id: shard-2
-            run: "^(TestAccModule_basic|TestAccProviderRecord_basic|TestAccTerraformMirror_basic|TestAccMirror_basic|TestAccUser_basic)$"
+            run: "^(TestAccModule_basic|TestAccProviderRecord_basic|TestAccTerraformMirror_basic|TestAccMirror_basic|TestAccMirror_noOrganizationID_refused|TestAccUser_basic)$"
           # Mixed mediums. ~720s.
           - id: shard-3
             run: "^(TestAccAPIKey_basic|TestAccApprovalRequest_basic|TestAccOrganization_basic|TestAccRoleTemplate_basic|TestAccDataProviders_basic|TestAccSCMProvider_basic|TestAccStorageConfig_basic)$"
@@ -239,14 +249,21 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Log in to GHCR
+      # Only runs when the backend image itself is private: a registry that
+      # needs no authentication to pull from needs no login step, so this is
+      # skipped whenever TFR_ACC_REGISTRY_PASSWORD is unset rather than
+      # assuming any one registry host.
+      - name: Log in to the backend image registry
+        if: ${{ secrets.TFR_ACC_REGISTRY_PASSWORD != '' }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ secrets.TFR_ACC_REGISTRY_HOST }}
+          username: ${{ secrets.TFR_ACC_REGISTRY_USERNAME }}
+          password: ${{ secrets.TFR_ACC_REGISTRY_PASSWORD }}
 
       - name: Start test stack
+        env:
+          TFR_ACC_BACKEND_IMAGE: ${{ secrets.TFR_ACC_BACKEND_IMAGE }}
         run: docker compose -f deployments/docker-compose.test.yml up -d
 
       - name: Wait for backend to be healthy
@@ -264,16 +281,16 @@ jobs:
           docker compose -f deployments/docker-compose.test.yml logs backend
           exit 1
 
-      - name: Seed dev admin user
-        run: |
-          docker compose -f deployments/docker-compose.test.yml exec -T postgres \
-            psql -U registry -d terraform_registry \
-            < deployments/seed-dev-admin.sql
-
       - name: Run acceptance tests (${{ matrix.shard.id }})
         env:
           TF_ACC: "1"
           TF_REGISTRY_ENDPOINT: "http://localhost:8081"
+          # Read by provider_test.go's TestMain: bootstraps a platform-admin
+          # account through the backend's setup API using the one-time
+          # setup token the backend wrote here (docker-compose.test.yml
+          # binds this path into the backend container). No SQL seeding
+          # and no direct database writes.
+          TFR_ACC_SETUP_TOKEN_FILE: ${{ github.workspace }}/deployments/.acc-run/setup-token
         run: go test -v -count=1 -timeout 25m -run '${{ matrix.shard.run }}' ./internal/provider/...
 
       - name: Dump backend logs on failure
@@ -282,7 +299,9 @@ jobs:
 
   # Aggregator job — keeps a single required check ("Acceptance Tests") for
   # branch protection so we don't have to update protection rules when shards
-  # are added or rebalanced. Fails if any shard failed or was skipped.
+  # are added or rebalanced. Fails if any shard failed; a skip (no
+  # TFR_ACC_BACKEND_IMAGE secret configured — see acc-tests-matrix) is not a
+  # failure, since public CI cannot supply a backend on its own.
   acc-tests:
     name: Acceptance Tests
     runs-on: ubuntu-latest
@@ -298,10 +317,17 @@ jobs:
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
-      - name: Verify all shards succeeded
+      - name: Verify all shards succeeded (or were skipped together)
         run: |
-          if [ "${{ needs.acc-tests-matrix.result }}" != "success" ]; then
-            echo "One or more acceptance-test shards failed: ${{ needs.acc-tests-matrix.result }}"
-            exit 1
+          result="${{ needs.acc-tests-matrix.result }}"
+          if [ "$result" = "success" ]; then
+            echo "All acceptance-test shards passed."
+            exit 0
           fi
-          echo "All acceptance-test shards passed."
+          if [ "$result" = "skipped" ]; then
+            echo "Acceptance tests skipped: no TFR_ACC_BACKEND_IMAGE secret is configured for this repository."
+            echo "See README.md \"Running tests\" to run them locally or in a CI environment that has one."
+            exit 0
+          fi
+          echo "One or more acceptance-test shards failed: $result"
+          exit 1

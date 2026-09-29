@@ -235,25 +235,53 @@ Unit tests (no backend required):
 make test
 ```
 
-Acceptance tests require a running registry backend. The easiest way is to use
-the included test stack:
+Acceptance tests require a running registry backend, on any release line —
+the suite targets whatever backend you point it at, not one image pinned in
+this repository.
+
+#### Option A: the included test stack
 
 ```shell
-# Start the backend (pulls a pinned ghcr.io/sethbacon/terraform-registry-backend tag)
+# Point TFR_ACC_BACKEND_IMAGE at a backend image, then start the stack.
+export TFR_ACC_BACKEND_IMAGE=<your-backend-image:tag>
 docker compose -f deployments/docker-compose.test.yml up -d
 
-# Seed the dev admin user (run once per fresh database)
-docker compose -f deployments/docker-compose.test.yml exec postgres \
-  psql -U registry -d terraform_registry < deployments/seed-dev-admin.sql
-
-# Run acceptance tests
+# Run acceptance tests — no separate seeding step. TestMain bootstraps a
+# platform-admin account through the backend's own setup API using the
+# one-time setup token the backend writes to deployments/.acc-run/ (bind
+# mount in docker-compose.test.yml). Nothing writes to the database
+# directly.
+export TF_REGISTRY_ENDPOINT=http://localhost:8081
+export TFR_ACC_SETUP_TOKEN_FILE="$(pwd)/deployments/.acc-run/setup-token"
 make testacc
 ```
 
-The `TF_REGISTRY_ENDPOINT` defaults to `http://localhost:8081`.
-If `TF_REGISTRY_TOKEN` is not set, the test suite fetches a token automatically
-via the backend's dev login endpoint (requires `DEV_MODE=true`, which the test
-stack enables by default).
+This only works against a *fresh* backend running with `DEV_MODE=true` that
+has not completed initial setup (that's what the test stack starts). Setup
+is single-use: run `docker compose ... down --volumes` between acceptance
+runs so a new setup token is generated, or reuse a stack across a single
+`make testacc` invocation.
+
+#### Option B: any other registry
+
+Set `TF_REGISTRY_TOKEN` to an existing admin API key or JWT and point
+`TF_REGISTRY_ENDPOINT` at that registry; `TFR_ACC_SETUP_TOKEN_FILE` is then
+unused and no bootstrap call is made:
+
+```shell
+export TF_REGISTRY_ENDPOINT=https://registry.example.com
+export TF_REGISTRY_TOKEN=<admin API key or JWT>
+make testacc
+```
+
+#### Environment variables
+
+| Variable                    | Required                         | Purpose                                                                                  |
+| ---------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------- |
+| `TF_REGISTRY_ENDPOINT`       | always                            | Base URL of the backend under test.                                                       |
+| `TF_REGISTRY_TOKEN`          | one of this or the row below      | An existing admin API key/JWT. Skips bootstrap entirely.                                  |
+| `TFR_ACC_SETUP_TOKEN_FILE`   | one of this or the row above      | Path to the backend's one-time setup token (Option A only); bootstraps a platform admin.  |
+| `TFR_ACC_BACKEND_IMAGE`      | only for the included test stack | Backend image `docker-compose.test.yml` starts.                                           |
 
 ### Generating documentation
 
