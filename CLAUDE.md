@@ -58,8 +58,7 @@ terraform-provider-registry/
 │   ├── client/       # HTTP client for the registry backend API
 │   └── provider/     # Terraform resource and data source implementations
 ├── deployments/
-│   ├── docker-compose.test.yml   # Test stack (backend + postgres)
-│   └── seed-dev-admin.sql        # Dev admin user seed
+│   └── docker-compose.test.yml   # Test stack (backend + postgres); TFR_ACC_BACKEND_IMAGE names the backend image
 ├── .github/workflows/
 │   ├── test.yml      # CI: build, lint, unit tests, acceptance tests
 │   └── release.yml   # GoReleaser: triggered by vX.Y.Z tag push
@@ -81,8 +80,10 @@ go build ./...
 go test -v -count=1 ./internal/client/...
 
 # Acceptance tests (requires backend — see README)
-docker compose -f deployments/docker-compose.test.yml up -d
-TF_ACC=1 TF_REGISTRY_ENDPOINT=http://localhost:8081 go test -v ./internal/provider/...
+TFR_ACC_BACKEND_IMAGE=<image> docker compose -f deployments/docker-compose.test.yml up -d
+TF_ACC=1 TF_REGISTRY_ENDPOINT=http://localhost:8081 \
+  TFR_ACC_SETUP_TOKEN_FILE="$(pwd)/deployments/.acc-run/setup-token" \
+  go test -v ./internal/provider/...
 
 # Lint
 golangci-lint run
@@ -112,6 +113,10 @@ make docs
 ## Development Notes
 
 - The provider is published as `sethbacon/registry` on the Terraform Registry.
-- Acceptance tests require a live backend; the `deployments/docker-compose.test.yml` stack provides one.
-- `DEV_MODE=true` on the backend enables `POST /api/v1/dev/login` for test token fetching.
-- If `TF_REGISTRY_TOKEN` is unset, `TestMain` in `provider_test.go` fetches a dev token automatically.
+- Acceptance tests require a live backend, any release — `TFR_ACC_BACKEND_IMAGE` and
+  `deployments/docker-compose.test.yml` provide one for local/CI use, or point
+  `TF_REGISTRY_ENDPOINT` at any other registry.
+- If `TF_REGISTRY_TOKEN` is unset, `TestMain` in `provider_test.go` bootstraps a
+  platform-admin account through the backend's setup API (using the one-time setup
+  token at `TFR_ACC_SETUP_TOKEN_FILE`) and signs in via `DEV_MODE`'s dev-login
+  endpoint. No database writes.

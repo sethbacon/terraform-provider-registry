@@ -77,21 +77,23 @@ supports import) or `examples/data-sources/<name>/data-source.tf`.
 
 For changes that affect provider behaviour, run the acceptance tests too:
 
-The test stack in `deployments/docker-compose.test.yml` pins the backend image to a specific
-version tag (e.g. `ghcr.io/sethbacon/terraform-registry-backend:v1.0.0`). Bump this pin in
-lockstep with backend major releases; otherwise leave it at the current pinned tag so that
-acceptance tests run against a known-good backend rather than a moving `latest`.
+The test stack in `deployments/docker-compose.test.yml` does not pin a backend image;
+point `TFR_ACC_BACKEND_IMAGE` at whatever backend build you want to test against (a
+local build, a release tag, or a private registry image). See "Running tests" in
+README.md for the full environment-variable contract, including how to run the
+suite against an already-configured registry instead of the test stack.
 
 ```bash
 # Start the test backend
-docker compose -f deployments/docker-compose.test.yml up -d
+TFR_ACC_BACKEND_IMAGE=<your-backend-image:tag> docker compose -f deployments/docker-compose.test.yml up -d
 
-# Seed the dev admin user (once per fresh database)
-docker compose -f deployments/docker-compose.test.yml exec -T postgres \
-  psql -U registry -d terraform_registry < deployments/seed-dev-admin.sql
-
-# Run acceptance tests
-TF_ACC=1 TF_REGISTRY_ENDPOINT=http://localhost:8081 go test -v ./internal/provider/...
+# Run acceptance tests. No seeding step: TestMain bootstraps a platform-admin
+# account through the backend's own setup API, using the one-time setup token
+# the backend writes to deployments/.acc-run/ (bind-mounted in
+# docker-compose.test.yml). Nothing is written to the database directly.
+TF_ACC=1 TF_REGISTRY_ENDPOINT=http://localhost:8081 \
+  TFR_ACC_SETUP_TOKEN_FILE="$(pwd)/deployments/.acc-run/setup-token" \
+  go test -v ./internal/provider/...
 ```
 
 Do not push until all checks pass locally.
