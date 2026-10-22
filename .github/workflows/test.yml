@@ -156,11 +156,43 @@ jobs:
   # Each shard runs its own isolated Docker stack on a fresh runner — no shared
   # state between shards. Partition is by test-name regex, balanced by observed
   # runtime so each shard finishes in roughly equal time (~10–12 min).
+  # `secrets` is not available in a job-level `if:` (GitHub rejects the whole
+  # file, so every job in it fails to start), so whether the backend-image
+  # secret is configured is decided here and handed to the matrix as an output.
+  acc-gate:
+    name: Acceptance Tests / gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      # hardening-exception: egress-audit — runs only a shell test of one secret and
+      #   makes no network request, but harden-runner has never run in this
+      #   repository, so no endpoint baseline exists and a block policy written
+      #   without one fails closed on its first run; audit is what produces that list
+      - name: Harden the runner
+        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        with:
+          egress-policy: audit
+      - name: Is a backend image configured?
+        id: check
+        env:
+          TFR_ACC_BACKEND_IMAGE: ${{ secrets.TFR_ACC_BACKEND_IMAGE }}
+        run: |
+          if [ -n "$TFR_ACC_BACKEND_IMAGE" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
   acc-tests-matrix:
     name: Acceptance Tests / ${{ matrix.shard.id }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: ${{ secrets.TFR_ACC_BACKEND_IMAGE != '' }}
+    needs: acc-gate
+    if: needs.acc-gate.outputs.enabled == 'true'
+    env:
+      HAS_REGISTRY_PASSWORD: ${{ secrets.TFR_ACC_REGISTRY_PASSWORD != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -205,7 +237,7 @@ jobs:
       # skipped whenever TFR_ACC_REGISTRY_PASSWORD is unset rather than
       # assuming any one registry host.
       - name: Log in to the backend image registry
-        if: ${{ secrets.TFR_ACC_REGISTRY_PASSWORD != '' }}
+        if: env.HAS_REGISTRY_PASSWORD == 'true'
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ${{ secrets.TFR_ACC_REGISTRY_HOST }}
@@ -257,7 +289,7 @@ jobs:
     name: Acceptance Tests
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    needs: acc-tests-matrix
+    needs: [acc-gate, acc-tests-matrix]
     if: always()
     steps:
       # hardening-exception: egress-audit — runs only shell against the checkout, so
@@ -270,6 +302,12 @@ jobs:
           egress-policy: audit
       - name: Verify all shards succeeded (or were skipped together)
         run: |
+          # A gate that did not succeed also leaves the matrix "skipped", which
+          # must not read as "no backend configured".
+          if [ "${{ needs.acc-gate.result }}" != "success" ]; then
+            echo "The acceptance-test gate did not succeed: ${{ needs.acc-gate.result }}"
+            exit 1
+          fi
           result="${{ needs.acc-tests-matrix.result }}"
           if [ "$result" = "success" ]; then
             echo "All acceptance-test shards passed."
