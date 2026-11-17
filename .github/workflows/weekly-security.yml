@@ -26,7 +26,7 @@ jobs:
       #   no endpoint baseline exists and a block policy written without one fails
       #   closed on its first run; audit is what produces that list
       - name: Harden the runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -47,7 +47,7 @@ jobs:
         # `outputs.exit-code`, `outputs.findings` and `outputs.errored`, so the steps
         # below no longer have to infer the verdict from the artifact -- and a
         # scanner error fails the job immediately rather than passing for clean.
-        uses: 4cloudguru/shared-workflows/.github/actions/osv-scan@a1fdc796956444af6c184c0784e1b033637888e9 # v1.29.3
+        uses: 4cloudguru/shared-workflows/.github/actions/osv-scan@51b396a2f7035e9358ebbd942425cc31bb9b81c9 # v1.30.0
         with:
           # --no-call-analysis=go is deliberate, and internal/cigate asserts it
           # stays paired with the govulncheck job below.
@@ -370,7 +370,7 @@ jobs:
       #   this repository, so no endpoint baseline exists and a block policy written
       #   without one fails closed on its first run; audit is what produces that list
       - name: Harden the runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -383,7 +383,7 @@ jobs:
           cache: true
 
       - name: Install govulncheck
-        uses: 4cloudguru/shared-workflows/.github/actions/go-install@a1fdc796956444af6c184c0784e1b033637888e9 # v1.29.3
+        uses: 4cloudguru/shared-workflows/.github/actions/go-install@51b396a2f7035e9358ebbd942425cc31bb9b81c9 # v1.30.0
         with:
           package: golang.org/x/vuln/cmd/govulncheck@v1.7.0
 
@@ -405,7 +405,7 @@ jobs:
       #   no endpoint baseline exists and a block policy written without one fails
       #   closed on its first run; audit is what produces that list
       - name: Harden the runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
       - name: Checkout
@@ -418,7 +418,7 @@ jobs:
           cache: true
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           languages: go
 
@@ -426,7 +426,7 @@ jobs:
         run: go build ./...
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           category: /language:go
 
@@ -443,7 +443,7 @@ jobs:
       #   exists and a block policy written without one fails closed on its first run;
       #   audit is what produces that list
       - name: Harden the runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
       - name: Label PRs open > 14 days
@@ -476,7 +476,7 @@ jobs:
       #   policy written without one fails closed on its first run; audit is what
       #   produces that list
       - name: Harden the runner
-        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
         with:
           egress-policy: audit
       - name: Create failure issue
